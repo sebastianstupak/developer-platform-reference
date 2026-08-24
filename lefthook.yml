@@ -2,10 +2,10 @@ pre-commit:
   commands:
     format:
       name: dotnet format check
-      run: dotnet format --verify-no-changes
+      run: dotnet format developer-platform-reference.slnx --verify-no-changes
     build:
       name: dotnet build
-      run: dotnet build --no-restore -warnaserror
+      run: dotnet build developer-platform-reference.slnx --no-restore -warnaserror
     arch-tests:
       name: architecture tests
       run: dotnet test tests/DeveloperPlatform.ArchitectureTests/DeveloperPlatform.ArchitectureTests.csproj --no-build

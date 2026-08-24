@@ -1,4 +1,4 @@
-﻿namespace DeveloperPlatform.Api.Tests;
+namespace DeveloperPlatform.Api.Tests;
 
 public class UnitTest1
 {
