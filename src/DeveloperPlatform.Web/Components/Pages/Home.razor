@@ -1,0 +1,40 @@
+@page "/"
+@attribute [Authorize]
+@inject DeveloperPlatformApiClient ApiClient
+
+<PageTitle>Home &mdash; Developer Platform</PageTitle>
+
+<h1>Developer Platform</h1>
+
+<p>Welcome, <strong>@_displayName</strong></p>
+
+<p>
+    API status:
+    @if (_apiHealthy)
+    {
+        <span style="color:green">&#10003; Healthy</span>
+    }
+    else
+    {
+        <span style="color:red">&#10007; Unavailable</span>
+    }
+</p>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string _displayName = string.Empty;
+    private bool _apiHealthy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is not null)
+        {
+            var authState = await AuthenticationStateTask;
+            _displayName = authState.User.Identity?.Name ?? "Unknown";
+        }
+
+        _apiHealthy = await ApiClient.IsHealthyAsync();
+    }
+}
