@@ -134,7 +134,7 @@ public class CommandDispatcherTests : IAsyncLifetime
             => Task.FromResult(Unit.Value);
     }
 
-    [CrossTenant(Reason = "System-level operation")]
+    [CrossTenant("System-level operation")]
     public record CrossTenantCommand : ICommand;
 
     public class CrossTenantCommandHandler : ICommandHandler<CrossTenantCommand, Unit>

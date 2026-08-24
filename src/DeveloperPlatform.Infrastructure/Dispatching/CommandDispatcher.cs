@@ -74,9 +74,11 @@ public sealed class CommandDispatcher(
     {
         try
         {
-            var entry = await BuildOutboxEntryAsync<TCommand, TResult>(command, AuditStatus.Failed, crossTenant, ct);
-            await auditOutboxRepository.AddAsync(entry, ct);
-            await db.SaveChangesAsync(ct);
+            await using var failTx = await db.Database.BeginTransactionAsync(CancellationToken.None);
+            var entry = await BuildOutboxEntryAsync<TCommand, TResult>(command, AuditStatus.Failed, crossTenant, CancellationToken.None);
+            await auditOutboxRepository.AddAsync(entry, CancellationToken.None);
+            await db.SaveChangesAsync(CancellationToken.None);
+            await failTx.CommitAsync(CancellationToken.None);
         }
         catch
         {
