@@ -1,0 +1,17 @@
+pre-commit:
+  commands:
+    format:
+      name: dotnet format check
+      run: dotnet format --verify-no-changes
+    build:
+      name: dotnet build
+      run: dotnet build --no-restore -warnaserror
+    arch-tests:
+      name: architecture tests
+      run: dotnet test tests/DeveloperPlatform.ArchitectureTests/DeveloperPlatform.ArchitectureTests.csproj --no-build
+
+commit-msg:
+  commands:
+    lint:
+      name: conventional commit lint
+      run: .githooks/commit-msg-lint.sh {1}
