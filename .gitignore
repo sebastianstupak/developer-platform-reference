@@ -486,3 +486,4 @@ $RECYCLE.BIN/
 .claude/
 .mcp.json
 docs/superpowers/
+.worktrees/
