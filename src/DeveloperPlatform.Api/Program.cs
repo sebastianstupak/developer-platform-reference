@@ -4,6 +4,7 @@ using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Api.OpenApi;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
+using Scalar.AspNetCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -65,6 +66,13 @@ try
     app.UseStatusCodePages();
 
     app.MapOpenApi("/openapi/{documentName}.json");
+    app.MapScalarApiReference("/docs/{documentName}", options =>
+    {
+        options
+            .WithTitle("Developer Platform API")
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+            .WithCustomCss(ScalarCustomCss.MudBlazorTheme);
+    });
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
