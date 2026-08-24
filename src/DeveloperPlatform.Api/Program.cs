@@ -1,3 +1,4 @@
+using DeveloperPlatform.Api.Endpoints.ApiKeys;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
 using Serilog;
@@ -33,6 +34,8 @@ try
 
     app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
         .WithName("Health");
+
+    app.MapCreateApiKey();
 
     app.Run();
 }

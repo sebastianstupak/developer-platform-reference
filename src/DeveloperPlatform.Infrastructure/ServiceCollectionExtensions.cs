@@ -1,8 +1,10 @@
+using DeveloperPlatform.Application.ApiKeys.CreateApiKey;
 using DeveloperPlatform.Application.Audit;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Tenancy;
+using DeveloperPlatform.Infrastructure.ApiKeys;
 using DeveloperPlatform.Infrastructure.Audit;
 using DeveloperPlatform.Infrastructure.Context;
 using DeveloperPlatform.Infrastructure.Crypto;
@@ -44,6 +46,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SensitiveDataScrubber>();
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
+
+        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
+        services.AddScoped<ICommandHandler<CreateApiKeyCommand, CreateApiKeyResult>, CreateApiKeyCommandHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();
