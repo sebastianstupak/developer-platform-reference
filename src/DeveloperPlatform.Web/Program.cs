@@ -74,9 +74,11 @@ app.UseAuthorization();
 app.UseSession();
 app.UseAntiforgery();
 
+app.MapRazorComponents<DeveloperPlatform.Web.Components.App>();
+
 app.MapGet("/login", () =>
     Results.Challenge(
-        new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        new AuthenticationProperties
         {
             RedirectUri = "/"
         },
@@ -88,7 +90,5 @@ app.MapPost("/logout", async (HttpContext ctx) =>
     await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
 }).RequireAuthorization();
-
-app.MapRazorComponents<DeveloperPlatform.Web.Components.App>();
 
 app.Run();
