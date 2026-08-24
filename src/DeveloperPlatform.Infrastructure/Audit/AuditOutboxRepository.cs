@@ -22,6 +22,7 @@ public sealed class AuditOutboxRepository(ApplicationDbContext db) : IAuditOutbo
         var entry = await db.AuditOutboxEntries.FindAsync([id], ct)
             ?? throw new InvalidOperationException($"Outbox entry {id} not found.");
         entry.MarkProcessed();
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task MarkFailedAsync(Guid id, CancellationToken ct = default)
@@ -29,5 +30,6 @@ public sealed class AuditOutboxRepository(ApplicationDbContext db) : IAuditOutbo
         var entry = await db.AuditOutboxEntries.FindAsync([id], ct)
             ?? throw new InvalidOperationException($"Outbox entry {id} not found.");
         entry.MarkFailed();
+        await db.SaveChangesAsync(ct);
     }
 }
