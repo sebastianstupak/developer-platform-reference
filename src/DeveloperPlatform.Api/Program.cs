@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
 using DeveloperPlatform.Api.Endpoints.Health;
+using DeveloperPlatform.Api.OpenApi;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
 using Serilog;
@@ -22,7 +23,23 @@ try
             .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day);
     });
 
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi("v1", options =>
+    {
+        options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+        options.AddDocumentTransformer((doc, ctx, ct) =>
+        {
+            doc.Info.Title = "Developer Platform API";
+            doc.Info.Version = "v1";
+            doc.Info.Description =
+                "Multi-tenant developer platform — API key management, projects, environments, secrets, and audit.";
+            doc.Info.Contact = new Microsoft.OpenApi.OpenApiContact
+            {
+                Name = "Developer Platform",
+                Url = new Uri("https://github.com/sebastianstupak/developer-platform-reference")
+            };
+            return Task.CompletedTask;
+        });
+    });
     builder.Services.AddApiVersioning(options =>
     {
         options.DefaultApiVersion = new ApiVersion(1);
@@ -47,10 +64,7 @@ try
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-    }
+    app.MapOpenApi("/openapi/{documentName}.json");
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
