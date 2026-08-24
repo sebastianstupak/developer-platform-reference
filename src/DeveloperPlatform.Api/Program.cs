@@ -4,6 +4,8 @@ using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Api.OpenApi;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -52,7 +54,19 @@ try
         options.GroupNameFormat = "'v'V";
         options.SubstituteApiVersionInUrl = true;
     });
-    builder.Services.AddAuthentication();
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = builder.Configuration["Keycloak:Authority"];
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                NameClaimType = "preferred_username",
+                RoleClaimType = "realm_access.roles"
+            };
+        });
+    builder.Services.AddAuthorization();
     builder.Services.AddProblemDetails();
     builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -77,6 +91,8 @@ try
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseWhen(
         ctx => ctx.Request.Path.StartsWithSegments("/api"),
         branch => branch.UseMiddleware<ExecutionContextMiddleware>()
