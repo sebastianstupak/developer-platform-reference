@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
@@ -21,9 +22,24 @@ try
     });
 
     builder.Services.AddOpenApi();
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+    })
+    .AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'V";
+        options.SubstituteApiVersionInUrl = true;
+    });
+    builder.Services.AddProblemDetails();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
+
+    app.UseExceptionHandler();
+    app.UseStatusCodePages();
 
     if (app.Environment.IsDevelopment())
     {
