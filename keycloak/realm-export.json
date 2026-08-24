@@ -15,7 +15,10 @@
     {
       "username": "dev@example.com",
       "email": "dev@example.com",
+      "firstName": "Dev",
+      "lastName": "User",
       "enabled": true,
+      "emailVerified": true,
       "credentials": [
         { "type": "password", "value": "password", "temporary": false }
       ],
@@ -33,8 +36,10 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": ["https://localhost:5001/signin-oidc"],
-      "postLogoutRedirectUris": ["https://localhost:5001/"],
       "webOrigins": ["https://localhost:5001"],
+      "attributes": {
+        "post.logout.redirect.uris": "https://localhost:5001/##https://localhost:5001/signout-callback-oidc"
+      },
       "protocolMappers": [
         {
           "name": "tenant-id-mapper",
@@ -59,9 +64,11 @@
       "protocol": "openid-connect",
       "publicClient": true,
       "standardFlowEnabled": false,
-      "deviceAuthorizationGrantEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "true"
+      },
       "protocolMappers": [
         {
           "name": "tenant-id-mapper",
