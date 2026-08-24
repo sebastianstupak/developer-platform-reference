@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DeveloperPlatform.Api\DeveloperPlatform.Api.csproj" />
+    <ProjectReference Include="..\..\src\DeveloperPlatform.Domain\DeveloperPlatform.Domain.csproj" />
+    <ProjectReference Include="..\..\src\DeveloperPlatform.Application\DeveloperPlatform.Application.csproj" />
+    <ProjectReference Include="..\..\src\DeveloperPlatform.Infrastructure\DeveloperPlatform.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

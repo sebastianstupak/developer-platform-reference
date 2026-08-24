@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# AI tooling — local scratch & config
+.superpowers/
+.claude/
+.mcp.json

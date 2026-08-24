@@ -29,6 +29,18 @@ public class ApiLayerTests
         Assert.True(result.IsSuccessful, FormatFailures(result));
     }
 
+    [Fact]
+    public void Api_Should_Not_Reference_DbContext_Directly()
+    {
+        var apiAssembly = System.Reflection.Assembly.Load("DeveloperPlatform.Api");
+
+        var result = Types.InAssembly(apiAssembly)
+            .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatFailures(result));
+    }
+
     private static string FormatFailures(TestResult result) =>
         string.Join(", ", result.FailingTypeNames ?? []);
 }

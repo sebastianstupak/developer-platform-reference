@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +12,12 @@
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeveloperPlatform.Domain\DeveloperPlatform.Domain.csproj" />
+    <ProjectReference Include="..\DeveloperPlatform.Application\DeveloperPlatform.Application.csproj" />
+    <ProjectReference Include="..\DeveloperPlatform.Infrastructure\DeveloperPlatform.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
