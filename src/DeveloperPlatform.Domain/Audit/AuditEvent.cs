@@ -39,4 +39,26 @@ public class AuditEvent : IEntity, ITenantScoped
             EncryptedPayload = entry.EncryptedPayload,
             KeyId = entry.KeyId
         };
+
+    public static AuditEvent Create(
+        Guid tenantId, DateTime occurredAt, string commandType, AuditStatus status,
+        Guid? userId, Guid? apiKeyId, Guid? projectId, Guid? environmentId,
+        string ipAddress, bool isCrossTenant, string? crossTenantReason,
+        byte[] encryptedPayload, Guid keyId) =>
+        new()
+        {
+            TenantId = tenantId,
+            OccurredAt = occurredAt,
+            CommandType = commandType,
+            Status = status,
+            UserId = userId,
+            ApiKeyId = apiKeyId,
+            ProjectId = projectId,
+            EnvironmentId = environmentId,
+            IpAddress = ipAddress,
+            IsCrossTenant = isCrossTenant,
+            CrossTenantReason = crossTenantReason,
+            EncryptedPayload = encryptedPayload,
+            KeyId = keyId
+        };
 }
