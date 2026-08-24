@@ -1,3 +1,5 @@
+using DeveloperPlatform.Infrastructure;
+using DeveloperPlatform.Infrastructure.Context;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -18,16 +20,16 @@ try
     });
 
     builder.Services.AddOpenApi();
+    builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
-    {
         app.MapOpenApi();
-    }
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
+    app.UseMiddleware<ExecutionContextMiddleware>();
 
     app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
         .WithName("Health");
