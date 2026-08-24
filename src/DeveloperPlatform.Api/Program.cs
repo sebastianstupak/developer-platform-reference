@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
+using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
 using Serilog;
@@ -38,6 +39,11 @@ try
 
     var app = builder.Build();
 
+    var versionSet = app.NewApiVersionSet()
+        .HasApiVersion(new ApiVersion(1))
+        .ReportApiVersions()
+        .Build();
+
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
@@ -50,10 +56,8 @@ try
     app.UseHttpsRedirection();
     app.UseMiddleware<ExecutionContextMiddleware>();
 
-    app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
-        .WithName("Health");
-
-    app.MapCreateApiKey();
+    app.MapHealth(versionSet);
+    app.MapCreateApiKey(versionSet);
 
     app.Run();
 }
