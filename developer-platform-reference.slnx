@@ -9,5 +9,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/DeveloperPlatform.Api.Tests/DeveloperPlatform.Api.Tests.csproj" />
     <Project Path="tests/DeveloperPlatform.ArchitectureTests/DeveloperPlatform.ArchitectureTests.csproj" />
+    <Project Path="tests/DeveloperPlatform.Web.Tests/DeveloperPlatform.Web.Tests.csproj" />
   </Folder>
 </Solution>
