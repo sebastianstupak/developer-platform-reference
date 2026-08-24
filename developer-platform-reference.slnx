@@ -4,6 +4,7 @@
     <Project Path="src/DeveloperPlatform.Application/DeveloperPlatform.Application.csproj" />
     <Project Path="src/DeveloperPlatform.Domain/DeveloperPlatform.Domain.csproj" />
     <Project Path="src/DeveloperPlatform.Infrastructure/DeveloperPlatform.Infrastructure.csproj" />
+    <Project Path="src/DeveloperPlatform.Web/DeveloperPlatform.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DeveloperPlatform.Api.Tests/DeveloperPlatform.Api.Tests.csproj" />
