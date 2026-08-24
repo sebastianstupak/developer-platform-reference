@@ -52,6 +52,7 @@ try
         options.GroupNameFormat = "'v'V";
         options.SubstituteApiVersionInUrl = true;
     });
+    builder.Services.AddAuthentication();
     builder.Services.AddProblemDetails();
     builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -66,7 +67,7 @@ try
     app.UseStatusCodePages();
 
     app.MapOpenApi("/openapi/{documentName}.json");
-    app.MapScalarApiReference("/docs/{documentName}", options =>
+    app.MapScalarApiReference("/docs", options =>
     {
         options
             .WithTitle("Developer Platform API")
@@ -76,7 +77,10 @@ try
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
-    app.UseMiddleware<ExecutionContextMiddleware>();
+    app.UseWhen(
+        ctx => ctx.Request.Path.StartsWithSegments("/api"),
+        branch => branch.UseMiddleware<ExecutionContextMiddleware>()
+    );
 
     app.MapHealth(versionSet);
     app.MapCreateApiKey(versionSet);

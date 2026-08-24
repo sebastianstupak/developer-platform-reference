@@ -18,12 +18,17 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    user: "999:999"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ERLANG_COOKIE: "secretcookie"
+      HOME: /var/lib/rabbitmq
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI → http://localhost:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -42,3 +47,4 @@ services:
 
 volumes:
   mariadb_data:
+  rabbitmq_data:
