@@ -25,7 +25,10 @@ public sealed class RabbitMqPublisher : IAsyncDisposable
 
     public async Task PublishAsync(AuditMessage message, CancellationToken ct = default)
     {
-        if (_channel is null) throw new InvalidOperationException("Publisher not initialized.");
+        if (_channel is null)
+        {
+            throw new InvalidOperationException("Publisher not initialized.");
+        }
 
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
         var routingKey = $"audit.{message.TenantId}";
@@ -51,7 +54,14 @@ public sealed class RabbitMqPublisher : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_channel is not null) await _channel.DisposeAsync();
-        if (_connection is not null) await _connection.DisposeAsync();
+        if (_channel is not null)
+        {
+            await _channel.DisposeAsync();
+        }
+
+        if (_connection is not null)
+        {
+            await _connection.DisposeAsync();
+        }
     }
 }

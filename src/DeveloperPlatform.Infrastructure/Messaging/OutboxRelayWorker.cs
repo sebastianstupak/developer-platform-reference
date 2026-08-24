@@ -37,7 +37,10 @@ public sealed class OutboxRelayWorker(
         var repo = scope.ServiceProvider.GetRequiredService<IAuditOutboxRepository>();
 
         var entries = await repo.GetPendingAsync(BatchSize, ct);
-        if (entries.Count == 0) return;
+        if (entries.Count == 0)
+        {
+            return;
+        }
 
         logger.LogInformation("Relaying {Count} outbox entries.", entries.Count);
 

@@ -31,8 +31,10 @@ public sealed class CommandDispatcher(
         if (crossTenant is not null)
         {
             if (tenancyMode == TenancyMode.DatabasePerTenant)
+            {
                 throw new NotSupportedException(
                     "Cross-tenant operations are not supported in DatabasePerTenant mode.");
+            }
 
             executionContext.IsCrossTenantOperation = true;
         }
@@ -58,7 +60,9 @@ public sealed class CommandDispatcher(
             await transaction.RollbackAsync(ct);
 
             if (!skipAudit)
+            {
                 await WriteFailedAuditAsync<TCommand, TResult>(command, crossTenant, ct);
+            }
 
             throw;
         }

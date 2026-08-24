@@ -36,7 +36,10 @@ public sealed class AuditConsumer(
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        if (_channel is null) return;
+        if (_channel is null)
+        {
+            return;
+        }
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.ReceivedAsync += async (_, ea) =>
@@ -81,7 +84,14 @@ public sealed class AuditConsumer(
     public override async Task StopAsync(CancellationToken ct)
     {
         await base.StopAsync(ct);
-        if (_channel is not null) await _channel.DisposeAsync();
-        if (_connection is not null) await _connection.DisposeAsync();
+        if (_channel is not null)
+        {
+            await _channel.DisposeAsync();
+        }
+
+        if (_connection is not null)
+        {
+            await _connection.DisposeAsync();
+        }
     }
 }

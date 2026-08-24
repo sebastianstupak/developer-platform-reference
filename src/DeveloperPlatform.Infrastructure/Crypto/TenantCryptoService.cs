@@ -49,8 +49,10 @@ public sealed class TenantCryptoService(ApplicationDbContext db, byte[] masterKe
             ?? throw new InvalidOperationException($"Encryption key {keyId} not found.");
 
         if (keyEntry.IsShredded)
+        {
             throw new InvalidOperationException(
                 $"Encryption key for tenant {tenantId} has been shredded. Data is unrecoverable.");
+        }
 
         var tenantKey = DecryptWithMasterKey(keyEntry.EncryptedKey);
         try
@@ -70,7 +72,9 @@ public sealed class TenantCryptoService(ApplicationDbContext db, byte[] masterKe
             .ToListAsync(ct);
 
         foreach (var key in keys)
+        {
             key.Shred();
+        }
     }
 
     private async Task<TenantEncryptionKey> GetActiveKeyAsync(Guid tenantId, CancellationToken ct)
