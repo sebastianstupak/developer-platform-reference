@@ -6,6 +6,8 @@ namespace DeveloperPlatform.Domain.Authorization;
 // Static because it is derived purely from compile-time enum metadata.
 public static class PermissionCatalog
 {
+    // Field order matters: static initializers run in textual declaration order, and
+    // AllDescriptors/ByToken are both built from ByPermission. Keep ByPermission first.
     private static readonly IReadOnlyDictionary<Permission, PermissionDescriptor> ByPermission = Build();
 
     private static readonly IReadOnlyList<PermissionDescriptor> AllDescriptors =

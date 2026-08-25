@@ -26,7 +26,8 @@ public class PermissionCatalogTests
     {
         Assert.Equal("secrets:write", PermissionCatalog.ToToken(Permission.SecretsWrite));
         Assert.Equal("projects:read", PermissionCatalog.ToToken(Permission.ProjectsRead));
-        Assert.Equal("apikeys:manage", PermissionCatalog.ToToken(Permission.ApiKeysManage));
+        Assert.Equal("api-keys:manage", PermissionCatalog.ToToken(Permission.ApiKeysManage));
+        Assert.Equal("service-accounts:manage", PermissionCatalog.ToToken(Permission.ServiceAccountsManage));
     }
 
     [Fact]
