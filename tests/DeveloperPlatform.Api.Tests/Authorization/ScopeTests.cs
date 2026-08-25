@@ -21,6 +21,8 @@ public class ScopeTests
         Assert.Equal(Proj, Scope.Project(Proj).TargetId);
         Assert.Throws<ArgumentException>(() => Scope.Create(ScopeType.Project, null));
         Assert.Throws<ArgumentException>(() => Scope.Create(ScopeType.Environment, null));
+        Assert.Throws<ArgumentException>(() => Scope.Create(ScopeType.Project, Guid.Empty));
+        Assert.Throws<ArgumentException>(() => Scope.Create(ScopeType.Environment, Guid.Empty));
     }
 
     [Fact]
