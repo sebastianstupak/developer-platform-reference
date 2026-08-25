@@ -70,6 +70,7 @@ try
         });
     builder.Services.AddAuthorization();
     builder.Services.AddProblemDetails();
+    builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.ForbiddenExceptionHandler>();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();

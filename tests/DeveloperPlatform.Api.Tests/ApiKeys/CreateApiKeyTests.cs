@@ -54,7 +54,8 @@ public class CreateApiKeyTests : IAsyncLifetime
             sp, _db, ctx, crypto,
             new AuditOutboxRepository(_db),
             new SensitiveDataScrubber(),
-            TenancyMode.SharedTables);
+            TenancyMode.SharedTables,
+            new DeveloperPlatform.Infrastructure.Authorization.AuthorizationService(_db));
     }
 
     public Task DisposeAsync() => _db.DisposeAsync().AsTask();

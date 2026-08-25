@@ -1,5 +1,6 @@
 using DeveloperPlatform.Application.ApiKeys.CreateApiKey;
 using DeveloperPlatform.Application.Audit;
+using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Application.Projects.CreateProject;
@@ -9,6 +10,7 @@ using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Infrastructure.ApiKeys;
 using DeveloperPlatform.Infrastructure.Audit;
+using DeveloperPlatform.Infrastructure.Authorization;
 using DeveloperPlatform.Infrastructure.Context;
 using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Dispatching;
@@ -48,6 +50,7 @@ public static class ServiceCollectionExtensions
             new TenantCryptoService(sp.GetRequiredService<ApplicationDbContext>(), masterKey));
 
         services.AddScoped<SensitiveDataScrubber>();
+        services.AddScoped<IAuthorizationService, AuthorizationService>();
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
 
