@@ -16,7 +16,6 @@ public class AuthorizationServiceTests : IAsyncLifetime
     private readonly Guid _tenant = Guid.NewGuid();
     private readonly Guid _principal = Guid.NewGuid();
     private readonly Guid _project = Guid.NewGuid();
-    private readonly Guid _env = Guid.NewGuid();
 
     public async Task InitializeAsync()
     {
@@ -27,7 +26,6 @@ public class AuthorizationServiceTests : IAsyncLifetime
         await _db.Database.EnsureCreatedAsync();
         // an environment under the project (for cascade resolution)
         _db.ProjectEnvironments.Add(ProjectEnvironment.Create(_tenant, _project, "prod", EnvironmentType.Production));
-        // give THIS env a known id by re-fetching is unnecessary; instead add a grant keyed to a real env id:
         await _db.SaveChangesAsync();
         _sut = new AuthorizationService(_db);
     }
@@ -77,6 +75,23 @@ public class AuthorizationServiceTests : IAsyncLifetime
         await _db.SaveChangesAsync();
 
         Assert.True(await _sut.IsAuthorizedAsync(_principal, Permission.AuditRead, Scope.Tenant));
+        Assert.False(await _sut.IsAuthorizedAsync(_principal, Permission.SecretsWrite, Scope.Tenant));
+    }
+
+    [Fact]
+    public async Task Role_Assignment_At_Project_Scope_Cascades_To_Environment()
+    {
+        var roleId = Guid.NewGuid();
+        var envEntity = ProjectEnvironment.Create(_tenant, _project, "qa", EnvironmentType.Staging);
+        _db.ProjectEnvironments.Add(envEntity);
+        _db.Roles.Add(Role.CreateSystem(roleId, "ProjRole", new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
+        _db.RolePermissions.Add(RolePermission.Create(roleId, Permission.SecretsWrite));
+        _db.RoleAssignments.Add(RoleAssignment.Create(_tenant, _principal, roleId, Scope.Project(_project)));
+        await _db.SaveChangesAsync();
+
+        Assert.True(await _sut.IsAuthorizedAsync(_principal, Permission.SecretsWrite, Scope.Project(_project)));
+        Assert.True(await _sut.IsAuthorizedAsync(_principal, Permission.SecretsWrite, Scope.Environment(envEntity.Id)));
+        Assert.False(await _sut.IsAuthorizedAsync(_principal, Permission.SecretsWrite, Scope.Project(Guid.NewGuid())));
         Assert.False(await _sut.IsAuthorizedAsync(_principal, Permission.SecretsWrite, Scope.Tenant));
     }
 
