@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
+using DeveloperPlatform.Api.Endpoints.Projects;
 using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Api.OpenApi;
 using DeveloperPlatform.Infrastructure;
@@ -100,6 +101,7 @@ try
 
     app.MapHealth(versionSet);
     app.MapCreateApiKey(versionSet);
+    app.MapProjects(versionSet);
 
     app.Run();
 }

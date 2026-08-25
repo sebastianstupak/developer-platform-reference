@@ -4,21 +4,36 @@
 
 <PageTitle>Home &mdash; Developer Platform</PageTitle>
 
-<h1>Developer Platform</h1>
+<MudStack Spacing="6">
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Welcome back, @_displayName</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Your developer platform overview.</MudText>
+    </div>
 
-<p>Welcome, <strong>@_displayName</strong></p>
-
-<p>
-    API status:
-    @if (_apiHealthy)
-    {
-        <span style="color:green">&#10003; Healthy</span>
-    }
-    else
-    {
-        <span style="color:red">&#10007; Unavailable</span>
-    }
-</p>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="0">
+                <MudCardContent>
+                    <MudText Typo="Typo.overline" Class="mud-text-secondary" GutterBottom="true">API Status</MudText>
+                    @if (_apiHealthy)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Style="color:var(--mud-palette-success)">Healthy</MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Style="color:var(--mud-palette-error)">Unavailable</MudText>
+                        </MudStack>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudStack>
 
 @code {
     [CascadingParameter]
