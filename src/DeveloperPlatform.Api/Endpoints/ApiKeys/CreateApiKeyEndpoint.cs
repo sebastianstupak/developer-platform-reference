@@ -43,7 +43,8 @@ public static class CreateApiKeyEndpoint
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithApiVersionSet(versionSet)
-        .MapToApiVersion(1);
+        .MapToApiVersion(1)
+        .RequireAuthorization();
 
         return app;
     }

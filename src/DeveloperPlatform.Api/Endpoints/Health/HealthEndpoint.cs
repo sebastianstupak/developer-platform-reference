@@ -15,7 +15,8 @@ public static class HealthEndpoint
             .WithDescription("Returns 200 OK when the API is reachable.")
             .Produces<HealthResponse>(StatusCodes.Status200OK)
             .WithApiVersionSet(versionSet)
-            .MapToApiVersion(1);
+            .MapToApiVersion(1)
+            .AllowAnonymous();
 
         return app;
     }

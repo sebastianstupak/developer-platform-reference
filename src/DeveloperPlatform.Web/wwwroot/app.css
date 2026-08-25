@@ -1,0 +1,43 @@
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+a, .btn-link {
+    color: #006bb7;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27113px%27%20height%3D%27113px%27%3E%3Ccircle%20cx%3D%2756.5px%27%20cy%3D%2756.5px%27%20r%3D%2756.5px%27%20fill%3D%27%23FF4343%27%2F%3E%3Ctext%20x%3D%2739px%27%20y%3D%2271px%27%20font-size%3D%2753px%27%20fill%3D%27%23fff%27%20font-family%3D%27Arial%27%3E!%3C%2Ftext%3E%3C%2Fsvg%3E) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}
