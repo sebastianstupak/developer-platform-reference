@@ -106,8 +106,9 @@ public class AuthorizationServiceTests : IAsyncLifetime
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
+        public Guid? PrincipalId => null;
+        public DeveloperPlatform.Domain.Authorization.PrincipalType? PrincipalType => null;
         public Guid? UserId => null;
-        public Guid? ApiKeyId => null;
         public Guid? ProjectId => null;
         public Guid? EnvironmentId => null;
         public string IpAddress => "127.0.0.1";

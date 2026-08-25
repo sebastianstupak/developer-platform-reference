@@ -73,7 +73,7 @@ public sealed class AuditConsumer(
         var status = Enum.Parse<AuditStatus>(message.Status);
         var ev = AuditEvent.Create(
             message.TenantId, message.OccurredAt, message.CommandType, status,
-            message.UserId, message.ApiKeyId, message.ProjectId, message.EnvironmentId,
+            message.PrincipalId, message.PrincipalType, message.UserId, message.ProjectId, message.EnvironmentId,
             message.IpAddress, message.IsCrossTenant, message.CrossTenantReason,
             message.EncryptedPayload, message.KeyId);
 

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
 namespace DeveloperPlatform.Infrastructure.Context;
@@ -17,17 +16,6 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
 
         executionContext.TenantId = tenantId;
         executionContext.IpAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        if (Guid.TryParse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? httpContext.User.FindFirst("sub")?.Value, out var userId))
-        {
-            executionContext.UserId = userId;
-        }
-
-        if (Guid.TryParse(httpContext.User.FindFirst("api_key_id")?.Value, out var apiKeyId))
-        {
-            executionContext.ApiKeyId = apiKeyId;
-        }
 
         if (Guid.TryParse(httpContext.User.FindFirst("project_id")?.Value, out var projectId))
         {
