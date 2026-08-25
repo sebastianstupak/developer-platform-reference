@@ -1,25 +1,36 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<MudThemeProvider Theme="DevPlatformTheme.Instance" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Dense="true" Color="Color.Inherit">
+        <MudText Typo="Typo.h6" Style="font-weight:600;letter-spacing:-0.02em">Developer Platform</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary mr-3">@context.User.Identity?.Name</MudText>
+                <form method="post" action="/logout">
+                    <AntiforgeryToken />
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Size="Size.Small"
+                               Style="border-color:var(--mud-palette-lines-default)">Logout</MudButton>
+                </form>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer Open="true" Variant="@DrawerVariant.Persistent" Elevation="0" ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.overline" Class="mud-text-secondary" Style="font-weight:600">Menu</MudText>
+        </MudDrawerHeader>
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <div class="top-row px-4">
-            <AuthorizeView>
-                <Authorized>
-                    <span class="me-3">@context.User.Identity?.Name</span>
-                    <form method="post" action="/logout">
-                        <AntiforgeryToken />
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Logout</button>
-                    </form>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-
-        <article class="content px-4">
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 px-6">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

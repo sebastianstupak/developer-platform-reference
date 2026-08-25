@@ -2,6 +2,9 @@ using DeveloperPlatform.Application.ApiKeys.CreateApiKey;
 using DeveloperPlatform.Application.Audit;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
+using DeveloperPlatform.Application.Projects.CreateProject;
+using DeveloperPlatform.Application.Projects.DeleteProject;
+using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Infrastructure.ApiKeys;
@@ -11,6 +14,7 @@ using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Dispatching;
 using DeveloperPlatform.Infrastructure.Messaging;
 using DeveloperPlatform.Infrastructure.Persistence;
+using DeveloperPlatform.Infrastructure.Projects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,6 +53,18 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddScoped<ICommandHandler<CreateApiKeyCommand, CreateApiKeyResult>, CreateApiKeyCommandHandler>();
+
+        // Project handlers
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<
+            IQueryHandler<GetProjectsQuery, IReadOnlyList<ProjectSummary>>,
+            GetProjectsQueryHandler>();
+        services.AddScoped<
+            ICommandHandler<CreateProjectCommand, CreateProjectResult>,
+            CreateProjectCommandHandler>();
+        services.AddScoped<
+            ICommandHandler<DeleteProjectCommand, Unit>,
+            DeleteProjectCommandHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();
