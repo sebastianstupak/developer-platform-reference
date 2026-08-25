@@ -1,5 +1,6 @@
-using System.Security.Claims;
+using DeveloperPlatform.Application.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DeveloperPlatform.Infrastructure.Context;
 
@@ -18,17 +19,6 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
         executionContext.TenantId = tenantId;
         executionContext.IpAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        if (Guid.TryParse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? httpContext.User.FindFirst("sub")?.Value, out var userId))
-        {
-            executionContext.UserId = userId;
-        }
-
-        if (Guid.TryParse(httpContext.User.FindFirst("api_key_id")?.Value, out var apiKeyId))
-        {
-            executionContext.ApiKeyId = apiKeyId;
-        }
-
         if (Guid.TryParse(httpContext.User.FindFirst("project_id")?.Value, out var projectId))
         {
             executionContext.ProjectId = projectId;
@@ -37,6 +27,15 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
         if (Guid.TryParse(httpContext.User.FindFirst("environment_id")?.Value, out var envId))
         {
             executionContext.EnvironmentId = envId;
+        }
+
+        var resolver = httpContext.RequestServices.GetRequiredService<IPrincipalResolver>();
+        var resolved = await resolver.ResolveAsync(httpContext.User, tenantId, httpContext.RequestAborted);
+        if (resolved is not null)
+        {
+            executionContext.PrincipalId = resolved.PrincipalId;
+            executionContext.PrincipalType = resolved.Type;
+            executionContext.UserId = resolved.UserId;
         }
 
         await next(httpContext);

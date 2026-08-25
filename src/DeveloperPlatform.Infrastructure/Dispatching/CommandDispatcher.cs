@@ -1,11 +1,13 @@
 using System.Reflection;
 using DeveloperPlatform.Application.Attributes;
 using DeveloperPlatform.Application.Audit;
+using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Context;
 using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Domain.Audit;
+using DeveloperPlatform.Domain.Authorization;
 using DeveloperPlatform.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +20,8 @@ public sealed class CommandDispatcher(
     ITenantCryptoService cryptoService,
     IAuditOutboxRepository auditOutboxRepository,
     SensitiveDataScrubber scrubber,
-    TenancyMode tenancyMode) : ICommandDispatcher
+    TenancyMode tenancyMode,
+    IAuthorizationService authorizationService) : ICommandDispatcher
 {
     public async Task<TResult> SendAsync<TCommand, TResult>(
         TCommand command, CancellationToken ct = default)
@@ -37,6 +40,25 @@ public sealed class CommandDispatcher(
             }
 
             executionContext.IsCrossTenantOperation = true;
+        }
+
+        var requiresPermission = typeof(TCommand).GetCustomAttribute<RequiresPermissionAttribute>();
+        if (requiresPermission is not null)
+        {
+            if (executionContext.PrincipalId is not Guid principalId)
+            {
+                throw new ForbiddenException("No principal in the execution context.");
+            }
+
+            var scope = command is IResourceScoped scoped
+                ? scoped.ResourceScope
+                : executionContext.EnvironmentId is Guid envId
+                    ? Scope.Environment(envId)
+                    : executionContext.ProjectId is Guid projId
+                        ? Scope.Project(projId)
+                        : Scope.Tenant;
+
+            await authorizationService.AuthorizeAsync(principalId, requiresPermission.Permission, scope, ct);
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -101,8 +123,9 @@ public sealed class CommandDispatcher(
             tenantId: executionContext.TenantId,
             commandType: typeof(TCommand).Name,
             status: status,
+            principalId: executionContext.PrincipalId,
+            principalType: executionContext.PrincipalType?.ToString(),
             userId: executionContext.UserId,
-            apiKeyId: executionContext.ApiKeyId,
             projectId: executionContext.ProjectId,
             environmentId: executionContext.EnvironmentId,
             ipAddress: executionContext.IpAddress,

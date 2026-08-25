@@ -10,8 +10,9 @@ public class AuditEvent : IEntity, ITenantScoped
     public DateTime OccurredAt { get; private set; }
     public string CommandType { get; private set; } = string.Empty;
     public AuditStatus Status { get; private set; }
+    public Guid? PrincipalId { get; private set; }
+    public string? PrincipalType { get; private set; }
     public Guid? UserId { get; private set; }
-    public Guid? ApiKeyId { get; private set; }
     public Guid? ProjectId { get; private set; }
     public Guid? EnvironmentId { get; private set; }
     public string IpAddress { get; private set; } = string.Empty;
@@ -29,8 +30,9 @@ public class AuditEvent : IEntity, ITenantScoped
             OccurredAt = entry.CreatedAt,
             CommandType = entry.CommandType,
             Status = entry.Status,
+            PrincipalId = entry.PrincipalId,
+            PrincipalType = entry.PrincipalType,
             UserId = entry.UserId,
-            ApiKeyId = entry.ApiKeyId,
             ProjectId = entry.ProjectId,
             EnvironmentId = entry.EnvironmentId,
             IpAddress = entry.IpAddress,
@@ -42,7 +44,8 @@ public class AuditEvent : IEntity, ITenantScoped
 
     public static AuditEvent Create(
         Guid tenantId, DateTime occurredAt, string commandType, AuditStatus status,
-        Guid? userId, Guid? apiKeyId, Guid? projectId, Guid? environmentId,
+        Guid? principalId, string? principalType, Guid? userId,
+        Guid? projectId, Guid? environmentId,
         string ipAddress, bool isCrossTenant, string? crossTenantReason,
         byte[] encryptedPayload, Guid keyId) =>
         new()
@@ -51,8 +54,9 @@ public class AuditEvent : IEntity, ITenantScoped
             OccurredAt = occurredAt,
             CommandType = commandType,
             Status = status,
+            PrincipalId = principalId,
+            PrincipalType = principalType,
             UserId = userId,
-            ApiKeyId = apiKeyId,
             ProjectId = projectId,
             EnvironmentId = environmentId,
             IpAddress = ipAddress,

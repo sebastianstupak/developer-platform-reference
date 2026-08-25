@@ -49,7 +49,8 @@ public class CommandDispatcherTests : IAsyncLifetime
 
         var repo = new AuditOutboxRepository(_db);
         var scrubber = new SensitiveDataScrubber();
-        _dispatcher = new CommandDispatcher(sp, _db, ctx, crypto, repo, scrubber, TenancyMode.SharedTables);
+        _dispatcher = new CommandDispatcher(sp, _db, ctx, crypto, repo, scrubber, TenancyMode.SharedTables,
+            new DeveloperPlatform.Infrastructure.Authorization.AuthorizationService(_db));
     }
 
     public Task DisposeAsync() => _db.DisposeAsync().AsTask();
@@ -108,7 +109,8 @@ public class CommandDispatcherTests : IAsyncLifetime
         services.AddScoped<ICommandHandler<CrossTenantCommand, Unit>, CrossTenantCommandHandler>();
         var sp = services.BuildServiceProvider();
         var dispatcher = new CommandDispatcher(sp, db, ctx, crypto,
-            new AuditOutboxRepository(db), new SensitiveDataScrubber(), TenancyMode.DatabasePerTenant);
+            new AuditOutboxRepository(db), new SensitiveDataScrubber(), TenancyMode.DatabasePerTenant,
+            new DeveloperPlatform.Infrastructure.Authorization.AuthorizationService(db));
 
         await Assert.ThrowsAsync<NotSupportedException>(
             () => dispatcher.SendAsync<CrossTenantCommand, Unit>(new CrossTenantCommand()));
