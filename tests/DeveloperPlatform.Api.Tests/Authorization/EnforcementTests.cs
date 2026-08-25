@@ -65,6 +65,38 @@ public class EnforcementTests : IAsyncLifetime
         Assert.Equal(Unit.Value, result);
     }
 
+    [Fact]
+    public async Task Guarded_Command_Throws_Forbidden_When_No_Principal()
+    {
+        _ctx.PrincipalId = null;
+        await Assert.ThrowsAsync<ForbiddenException>(
+            () => Build().SendAsync<GuardedCommand, Unit>(new GuardedCommand()));
+    }
+
+    [Fact]
+    public async Task Guarded_Query_Throws_Forbidden_Without_Permission()
+    {
+        await Assert.ThrowsAsync<ForbiddenException>(
+            () => BuildQuery().SendAsync<GuardedQuery, int>(new GuardedQuery()));
+    }
+
+    [Fact]
+    public async Task Guarded_Query_Succeeds_With_Grant()
+    {
+        _db.PermissionGrants.Add(PermissionGrant.Create(_tenant, _principal, Permission.ProjectsRead, Scope.Tenant));
+        await _db.SaveChangesAsync();
+
+        Assert.Equal(42, await BuildQuery().SendAsync<GuardedQuery, int>(new GuardedQuery()));
+    }
+
+    private QueryDispatcher BuildQuery()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<DeveloperPlatform.Application.Queries.IQueryHandler<GuardedQuery, int>, GuardedQueryHandler>();
+        var sp = services.BuildServiceProvider();
+        return new QueryDispatcher(sp, _ctx, new DeveloperPlatform.Infrastructure.Authorization.AuthorizationService(_db));
+    }
+
     [RequiresPermission(Permission.SecretsWrite)]
     public record GuardedCommand : ICommand;
 
@@ -72,5 +104,14 @@ public class EnforcementTests : IAsyncLifetime
     {
         public Task<Unit> HandleAsync(GuardedCommand command, CancellationToken ct = default)
             => Task.FromResult(Unit.Value);
+    }
+
+    [RequiresPermission(Permission.ProjectsRead)]
+    public record GuardedQuery : DeveloperPlatform.Application.Queries.IQuery<int>;
+
+    public class GuardedQueryHandler : DeveloperPlatform.Application.Queries.IQueryHandler<GuardedQuery, int>
+    {
+        public Task<int> HandleAsync(GuardedQuery query, CancellationToken ct = default)
+            => Task.FromResult(42);
     }
 }
