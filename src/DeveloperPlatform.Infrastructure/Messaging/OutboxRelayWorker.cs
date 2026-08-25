@@ -62,7 +62,7 @@ public sealed class OutboxRelayWorker(
 
     private static AuditMessage ToMessage(AuditOutboxEntry entry) =>
         new(entry.Id, entry.TenantId, entry.CommandType, entry.Status.ToString(),
-            entry.UserId, entry.ApiKeyId, entry.ProjectId, entry.EnvironmentId,
+            entry.PrincipalId, entry.PrincipalType, entry.UserId, entry.ProjectId, entry.EnvironmentId,
             entry.IpAddress, entry.IsCrossTenant, entry.CrossTenantReason,
             entry.EncryptedPayload, entry.KeyId, entry.CreatedAt);
 }

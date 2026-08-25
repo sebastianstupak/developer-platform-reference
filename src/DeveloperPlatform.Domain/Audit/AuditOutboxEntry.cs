@@ -11,8 +11,9 @@ public class AuditOutboxEntry : IEntity, ITenantScoped
     public Guid TenantId { get; private set; }
     public string CommandType { get; private set; } = string.Empty;
     public AuditStatus Status { get; private set; }
+    public Guid? PrincipalId { get; private set; }
+    public string? PrincipalType { get; private set; }
     public Guid? UserId { get; private set; }
-    public Guid? ApiKeyId { get; private set; }
     public Guid? ProjectId { get; private set; }
     public Guid? EnvironmentId { get; private set; }
     public string IpAddress { get; private set; } = string.Empty;
@@ -28,7 +29,8 @@ public class AuditOutboxEntry : IEntity, ITenantScoped
 
     public static AuditOutboxEntry Create(
         Guid tenantId, string commandType, AuditStatus status,
-        Guid? userId, Guid? apiKeyId, Guid? projectId, Guid? environmentId,
+        Guid? principalId, string? principalType, Guid? userId,
+        Guid? projectId, Guid? environmentId,
         string ipAddress, bool isCrossTenant, string? crossTenantReason,
         byte[] encryptedPayload, Guid keyId)
     {
@@ -37,8 +39,9 @@ public class AuditOutboxEntry : IEntity, ITenantScoped
             TenantId = tenantId,
             CommandType = commandType,
             Status = status,
+            PrincipalId = principalId,
+            PrincipalType = principalType,
             UserId = userId,
-            ApiKeyId = apiKeyId,
             ProjectId = projectId,
             EnvironmentId = environmentId,
             IpAddress = ipAddress,
