@@ -1,4 +1,5 @@
 using DeveloperPlatform.Domain.Authorization;
+using DeveloperPlatform.Infrastructure.Authorization;
 using DeveloperPlatform.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,5 +16,7 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
 
         builder.HasOne<Role>().WithMany().HasForeignKey(rp => rp.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasData(SystemRoles.AllPermissions);
     }
 }
