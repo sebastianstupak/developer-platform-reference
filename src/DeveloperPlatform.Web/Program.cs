@@ -51,6 +51,7 @@ builder.Services.AddDataProtection()
         "DevPlatform-DataProtection-Keys");
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddTransient<ApiTokenHandler>();
 builder.Services.AddHttpClient<DeveloperPlatformApiClient>(c =>
     c.BaseAddress = new Uri(config["Api:BaseUrl"]!))

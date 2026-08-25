@@ -1,90 +1,108 @@
 {
-  "realm": "developer-platform",
-  "enabled": true,
-  "registrationAllowed": false,
-  "loginWithEmailAllowed": true,
-  "accessTokenLifespan": 300,
-  "ssoSessionMaxLifespan": 36000,
-  "roles": {
-    "realm": [
-      { "name": "platform-admin", "composite": false },
-      { "name": "viewer", "composite": false }
-    ]
-  },
-  "users": [
-    {
-      "username": "dev@example.com",
-      "email": "dev@example.com",
-      "firstName": "Dev",
-      "lastName": "User",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        { "type": "password", "value": "password", "temporary": false }
-      ],
-      "realmRoles": ["platform-admin"]
-    }
-  ],
-  "clients": [
-    {
-      "clientId": "web-client",
-      "name": "Developer Platform Web",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "web-client-secret",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "redirectUris": ["https://localhost:5001/signin-oidc"],
-      "webOrigins": ["https://localhost:5001"],
-      "attributes": {
-        "post.logout.redirect.uris": "https://localhost:5001/##https://localhost:5001/signout-callback-oidc"
-      },
-      "protocolMappers": [
-        {
-          "name": "tenant-id-mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.value": "00000000-0000-0000-0000-000000000001",
-            "userinfo.token.claim": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "tenant_id",
-            "jsonType.label": "String"
-          }
-        }
-      ]
-    },
-    {
-      "clientId": "cli-client",
-      "name": "Developer Platform CLI",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "redirectUris": [],
-      "attributes": {
-        "oauth2.device.authorization.grant.enabled": "true"
-      },
-      "protocolMappers": [
-        {
-          "name": "tenant-id-mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.value": "00000000-0000-0000-0000-000000000001",
-            "userinfo.token.claim": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "tenant_id",
-            "jsonType.label": "String"
-          }
-        }
-      ]
-    }
-  ]
+    "realm":  "developer-platform",
+    "enabled":  true,
+    "registrationAllowed":  false,
+    "loginWithEmailAllowed":  true,
+    "accessTokenLifespan":  300,
+    "ssoSessionMaxLifespan":  36000,
+    "roles":  {
+                  "realm":  [
+                                {
+                                    "name":  "platform-admin",
+                                    "composite":  false
+                                },
+                                {
+                                    "name":  "viewer",
+                                    "composite":  false
+                                }
+                            ]
+              },
+    "users":  [
+                  {
+                      "username":  "dev@example.com",
+                      "email":  "dev@example.com",
+                      "firstName":  "Dev",
+                      "lastName":  "User",
+                      "enabled":  true,
+                      "emailVerified":  true,
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "password",
+                                              "temporary":  false
+                                          }
+                                      ],
+                      "realmRoles":  [
+                                         "platform-admin"
+                                     ]
+                  }
+              ],
+    "clients":  [
+                    {
+                        "clientId":  "web-client",
+                        "name":  "Developer Platform Web",
+                        "enabled":  true,
+                        "protocol":  "openid-connect",
+                        "publicClient":  false,
+                        "secret":  "web-client-secret",
+                        "standardFlowEnabled":  true,
+                        "directAccessGrantsEnabled":  false,
+                        "redirectUris":  [
+                                             "http://localhost:5000/signin-oidc"
+                                         ],
+                        "webOrigins":  [
+                                           "http://localhost:5000"
+                                       ],
+                        "attributes":  {
+                                           "post.logout.redirect.uris":  "http://localhost:5000/##http://localhost:5000/signout-callback-oidc"
+                                       },
+                        "protocolMappers":  [
+                                                {
+                                                    "name":  "tenant-id-mapper",
+                                                    "protocol":  "openid-connect",
+                                                    "protocolMapper":  "oidc-hardcoded-claim-mapper",
+                                                    "consentRequired":  false,
+                                                    "config":  {
+                                                                   "claim.value":  "00000000-0000-0000-0000-000000000001",
+                                                                   "userinfo.token.claim":  "true",
+                                                                   "id.token.claim":  "true",
+                                                                   "access.token.claim":  "true",
+                                                                   "claim.name":  "tenant_id",
+                                                                   "jsonType.label":  "String"
+                                                               }
+                                                }
+                                            ]
+                    },
+                    {
+                        "clientId":  "cli-client",
+                        "name":  "Developer Platform CLI",
+                        "enabled":  true,
+                        "protocol":  "openid-connect",
+                        "publicClient":  true,
+                        "standardFlowEnabled":  false,
+                        "directAccessGrantsEnabled":  false,
+                        "redirectUris":  [
+
+                                         ],
+                        "attributes":  {
+                                           "oauth2.device.authorization.grant.enabled":  "true"
+                                       },
+                        "protocolMappers":  [
+                                                {
+                                                    "name":  "tenant-id-mapper",
+                                                    "protocol":  "openid-connect",
+                                                    "protocolMapper":  "oidc-hardcoded-claim-mapper",
+                                                    "consentRequired":  false,
+                                                    "config":  {
+                                                                   "claim.value":  "00000000-0000-0000-0000-000000000001",
+                                                                   "userinfo.token.claim":  "true",
+                                                                   "id.token.claim":  "true",
+                                                                   "access.token.claim":  "true",
+                                                                   "claim.name":  "tenant_id",
+                                                                   "jsonType.label":  "String"
+                                                               }
+                                                }
+                                            ]
+                    }
+                ]
 }
