@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using DeveloperPlatform.Web.Http;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -55,7 +56,9 @@ builder.Services.AddHttpClient<DeveloperPlatformApiClient>(c =>
     c.BaseAddress = new Uri(config["Api:BaseUrl"]!))
     .AddHttpMessageHandler<ApiTokenHandler>();
 
-builder.Services.AddRazorComponents();
+builder.Services.AddMudServices();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
@@ -74,7 +77,8 @@ app.UseAuthorization();
 app.UseSession();
 app.UseAntiforgery();
 
-app.MapRazorComponents<DeveloperPlatform.Web.Components.App>();
+app.MapRazorComponents<DeveloperPlatform.Web.Components.App>()
+    .AddInteractiveServerRenderMode();
 
 app.MapGet("/login", () =>
     Results.Challenge(
