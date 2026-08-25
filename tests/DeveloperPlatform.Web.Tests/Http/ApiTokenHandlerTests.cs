@@ -42,7 +42,7 @@ public sealed class ApiTokenHandlerTests
             return new HttpResponseMessage(HttpStatusCode.OK);
         });
 
-        var handler = new ApiTokenHandler(httpContextAccessor)
+        var handler = new ApiTokenHandler(httpContextAccessor, new TokenProvider())
         {
             InnerHandler = innerHandler
         };
@@ -72,7 +72,7 @@ public sealed class ApiTokenHandlerTests
             return new HttpResponseMessage(HttpStatusCode.OK);
         });
 
-        var handler = new ApiTokenHandler(httpContextAccessor)
+        var handler = new ApiTokenHandler(httpContextAccessor, new TokenProvider())
         {
             InnerHandler = innerHandler
         };

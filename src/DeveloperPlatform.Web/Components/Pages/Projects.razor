@@ -4,6 +4,8 @@
 @inject DeveloperPlatformApiClient ApiClient
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
 
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -74,6 +76,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+
         await LoadProjectsAsync();
     }
 
@@ -89,8 +96,9 @@
         var dialog = await DialogService.ShowAsync<CreateProjectDialog>("New Project");
         var result = await dialog.Result;
 
-        if (result is { Canceled: false, Data: (string name, string description) })
+        if (result is not null && !result.Canceled && result.Data is ValueTuple<string, string?> value)
         {
+            var (name, description) = value;
             var id = await ApiClient.CreateProjectAsync(name, description);
             if (id is not null)
             {
