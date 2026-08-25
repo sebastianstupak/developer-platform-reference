@@ -1,4 +1,6 @@
+using DeveloperPlatform.Application.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DeveloperPlatform.Infrastructure.Context;
 
@@ -25,6 +27,15 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
         if (Guid.TryParse(httpContext.User.FindFirst("environment_id")?.Value, out var envId))
         {
             executionContext.EnvironmentId = envId;
+        }
+
+        var resolver = httpContext.RequestServices.GetRequiredService<IPrincipalResolver>();
+        var resolved = await resolver.ResolveAsync(httpContext.User, tenantId, httpContext.RequestAborted);
+        if (resolved is not null)
+        {
+            executionContext.PrincipalId = resolved.PrincipalId;
+            executionContext.PrincipalType = resolved.Type;
+            executionContext.UserId = resolved.UserId;
         }
 
         await next(httpContext);

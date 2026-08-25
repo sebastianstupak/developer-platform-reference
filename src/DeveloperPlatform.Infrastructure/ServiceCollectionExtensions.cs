@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<SensitiveDataScrubber>();
         services.AddScoped<IAuthorizationService, AuthorizationService>();
+        services.AddScoped<IPrincipalResolver, PrincipalResolver>();
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
 
