@@ -4,6 +4,8 @@ using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Domain.Abstractions;
 using DeveloperPlatform.Domain.ApiKeys;
 using DeveloperPlatform.Domain.Audit;
+using DeveloperPlatform.Domain.Authorization;
+using DeveloperPlatform.Domain.Identity;
 using DeveloperPlatform.Domain.Projects;
 using DeveloperPlatform.Domain.Secrets;
 using DeveloperPlatform.Domain.Tenants;
@@ -24,6 +26,15 @@ public class ApplicationDbContext(
     public DbSet<Secret> Secrets => Set<Secret>();
     public DbSet<AuditOutboxEntry> AuditOutboxEntries => Set<AuditOutboxEntry>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Principal> Principals => Set<Principal>();
+    public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<ServiceAccount> ServiceAccounts => Set<ServiceAccount>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
+    public DbSet<PermissionGrant> PermissionGrants => Set<PermissionGrant>();
+    public DbSet<Invitation> Invitations => Set<Invitation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

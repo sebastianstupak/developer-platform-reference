@@ -32,6 +32,8 @@ public class DomainLayerTests
             .And().ImplementInterface(typeof(IEntity))
             .And().DoNotHaveNameMatching("Tenant$")
             .And().DoNotHaveNameMatching("TenantEncryptionKey")
+            .And().DoNotHaveNameMatching("^User$")
+            .And().DoNotHaveNameMatching("^Role$")
             .Should().ImplementInterface(typeof(ITenantScoped))
             .GetResult();
 
