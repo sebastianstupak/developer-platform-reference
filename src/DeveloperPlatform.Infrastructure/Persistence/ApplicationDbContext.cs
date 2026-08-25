@@ -35,6 +35,7 @@ public class ApplicationDbContext(
     public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
     public DbSet<PermissionGrant> PermissionGrants => Set<PermissionGrant>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<ApiKeyCredential> ApiKeyCredentials => Set<ApiKeyCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
