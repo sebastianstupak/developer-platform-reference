@@ -4,6 +4,7 @@ using DeveloperPlatform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeveloperPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825201453_AddAuthorizationModel")]
+    partial class AddAuthorizationModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -389,36 +392,6 @@ namespace DeveloperPlatform.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsSystem = true,
-                            Name = "Owner"
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsSystem = true,
-                            Name = "Admin"
-                        },
-                        new
-                        {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsSystem = true,
-                            Name = "Developer"
-                        },
-                        new
-                        {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsSystem = true,
-                            Name = "Viewer"
-                        });
                 });
 
             modelBuilder.Entity("DeveloperPlatform.Domain.Authorization.RoleAssignment", b =>
@@ -470,128 +443,6 @@ namespace DeveloperPlatform.Infrastructure.Migrations
                     b.HasKey("RoleId", "Permission");
 
                     b.ToTable("RolePermissions");
-
-                    b.HasData(
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "projects:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "projects:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "secrets:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "secrets:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "api-keys:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "members:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "service-accounts:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "roles:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Permission = "audit:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "projects:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "projects:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "secrets:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "secrets:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "api-keys:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "members:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "service-accounts:manage"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Permission = "audit:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Permission = "projects:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Permission = "projects:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Permission = "secrets:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Permission = "secrets:write"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Permission = "projects:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Permission = "secrets:read"
-                        },
-                        new
-                        {
-                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Permission = "audit:read"
-                        });
                 });
 
             modelBuilder.Entity("DeveloperPlatform.Domain.Authorization.ServiceAccount", b =>
