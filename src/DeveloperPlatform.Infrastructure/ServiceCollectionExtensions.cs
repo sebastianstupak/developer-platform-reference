@@ -2,7 +2,9 @@ using DeveloperPlatform.Application.ApiKeys.GetApiKeys;
 using DeveloperPlatform.Application.ApiKeys.IssueApiKey;
 using DeveloperPlatform.Application.ApiKeys.RevokeApiKey;
 using DeveloperPlatform.Application.Audit;
+using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Authorization;
+using DeveloperPlatform.Application.Common;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Application.Environments.CreateEnvironment;
@@ -127,6 +129,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<InviteMemberCommand, InviteMemberResult>, InviteMemberCommandHandler>();
         services.AddScoped<ICommandHandler<RevokeInvitationCommand, Unit>, RevokeInvitationCommandHandler>();
         services.AddScoped<IQueryHandler<GetInvitationsQuery, IReadOnlyList<InvitationSummary>>, GetInvitationsQueryHandler>();
+
+        // Audit (Slice A)
+        services.AddScoped<IQueryHandler<GetAuditEventsQuery, PagedResult<AuditEventSummary>>, GetAuditEventsQueryHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();
