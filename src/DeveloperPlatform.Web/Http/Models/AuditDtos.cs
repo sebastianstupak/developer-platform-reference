@@ -19,7 +19,7 @@ public record AuditDetailDto(AuditEventDto Event, string? CrossTenantReason, str
 public record AuditFilterDto(
     DateTime? From,
     DateTime? To,
-    Guid? PrincipalId,
-    string? CommandType,
-    string? Status,
+    IReadOnlyList<Guid> PrincipalIds,
+    IReadOnlyList<string> CommandTypes,
+    IReadOnlyList<string> Statuses,
     bool? CrossTenantOnly);

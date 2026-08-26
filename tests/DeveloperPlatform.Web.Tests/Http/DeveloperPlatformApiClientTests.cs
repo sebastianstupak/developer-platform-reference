@@ -98,6 +98,22 @@ public sealed class DeveloperPlatformApiClientTests
         }
     }
 
+    // Captures the outgoing request URI so query-string construction can be asserted.
+    private sealed class CapturingHandler(string body) : HttpMessageHandler
+    {
+        public Uri? LastRequestUri { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            LastRequestUri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            });
+        }
+    }
+
     [Fact]
     public async Task GetProjectsAsync_Returns_List_On_200()
     {
@@ -295,7 +311,7 @@ public sealed class DeveloperPlatformApiClientTests
             HttpStatusCode.OK, JsonSerializer.Serialize(page));
         var client = new DeveloperPlatformApiClient(
             new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
-        var filter = new AuditFilterDto(null, null, null, null, null, null);
+        var filter = new AuditFilterDto(null, null, [], [], [], null);
 
         var result = await client.GetAuditEventsAsync(filter, 1, 20);
 
@@ -305,12 +321,35 @@ public sealed class DeveloperPlatformApiClientTests
     }
 
     [Fact]
+    public async Task GetAuditEventsAsync_Emits_Repeated_Params_For_Multi_Value_Filters()
+    {
+        var capture = new CapturingHandler("{\"items\":[],\"total\":0,\"page\":1,\"pageSize\":25}");
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(capture) { BaseAddress = new Uri("http://localhost") });
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var filter = new AuditFilterDto(null, null, [a, b],
+            ["SetSecretCommand", "RevealSecretCommand"], ["Success", "Failed"], true);
+
+        await client.GetAuditEventsAsync(filter, 1, 25);
+
+        var query = capture.LastRequestUri!.Query;
+        Assert.Contains($"principalId={a}", query);
+        Assert.Contains($"principalId={b}", query);
+        Assert.Contains("commandType=SetSecretCommand", query);
+        Assert.Contains("commandType=RevealSecretCommand", query);
+        Assert.Contains("status=Success", query);
+        Assert.Contains("status=Failed", query);
+        Assert.Contains("crossTenantOnly=True", query);
+    }
+
+    [Fact]
     public async Task GetAuditEventsAsync_Returns_Empty_Page_On_Failure()
     {
         var handler = new MockHttpMessageHandler(HttpStatusCode.InternalServerError, string.Empty);
         var client = new DeveloperPlatformApiClient(
             new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
-        var filter = new AuditFilterDto(null, null, null, null, null, null);
+        var filter = new AuditFilterDto(null, null, [], [], [], null);
 
         var result = await client.GetAuditEventsAsync(filter, 1, 20);
 

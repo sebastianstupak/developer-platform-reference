@@ -17,13 +17,13 @@ public static class AuditEndpoints
             .WithTags("Audit").WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
 
         group.MapGet("/", async (
-            DateTime? from, DateTime? to, Guid? principalId, string? commandType,
-            AuditStatus? status, bool? crossTenantOnly, int? page, int? pageSize,
+            DateTime? from, DateTime? to, Guid[]? principalId, string[]? commandType,
+            AuditStatus[]? status, bool? crossTenantOnly, int? page, int? pageSize,
             IQueryDispatcher d, CancellationToken ct) =>
         {
             var result = await d.SendAsync<GetAuditEventsQuery, PagedResult<AuditEventSummary>>(
                 new GetAuditEventsQuery(
-                    new AuditFilter(from, to, principalId, commandType, status, crossTenantOnly),
+                    new AuditFilter(from, to, principalId ?? [], commandType ?? [], status ?? [], crossTenantOnly),
                     page ?? 1, pageSize ?? 25), ct);
 
             return Results.Ok(new AuditPageResponse(
