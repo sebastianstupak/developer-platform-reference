@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using DeveloperPlatform.Application.Authorization;
+using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Domain.Authorization;
 using DeveloperPlatform.Domain.Identity;
 using DeveloperPlatform.Infrastructure.Persistence;
@@ -7,7 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeveloperPlatform.Infrastructure.Authorization;
 
-public sealed class PrincipalResolver(ApplicationDbContext db) : IPrincipalResolver
+public sealed class PrincipalResolver(ApplicationDbContext db, ITenantCryptoService cryptoService)
+    : IPrincipalResolver
 {
     public async Task<ResolvedPrincipal?> ResolveAsync(
         ClaimsPrincipal user, Guid tenantId, CancellationToken ct = default)
@@ -18,7 +20,6 @@ public sealed class PrincipalResolver(ApplicationDbContext db) : IPrincipalResol
             return null;
         }
 
-        // Find-or-JIT-create the global User (keyed by Keycloak subject).
         var dbUser = await db.Users.FirstOrDefaultAsync(u => u.KeycloakSubject == subject, ct);
         if (dbUser is null)
         {
@@ -30,25 +31,43 @@ public sealed class PrincipalResolver(ApplicationDbContext db) : IPrincipalResol
             await db.SaveChangesAsync(ct);
         }
 
-        // Find the membership for this user in this tenant.
-        var membership = await db.Memberships
-            .FirstOrDefaultAsync(m => m.UserId == dbUser.Id, ct); // tenant filter scopes to current tenant
+        var membership = await db.Memberships.FirstOrDefaultAsync(m => m.UserId == dbUser.Id, ct);
         if (membership is not null)
         {
             return new ResolvedPrincipal(membership.PrincipalId, PrincipalType.Member, dbUser.Id);
         }
 
-        // JIT-create a principal + membership. Bootstrap: the first member of a tenant becomes Owner.
-        var isFirstMember = !await db.Memberships.AnyAsync(ct); // filtered to this tenant
+        // First member of the tenant → Owner, and provision the tenant encryption key.
+        if (!await db.Memberships.AnyAsync(ct))
+        {
+            var owner = Principal.CreateMember(tenantId, dbUser.DisplayName);
+            db.Principals.Add(owner);
+            db.Memberships.Add(Membership.Create(tenantId, owner.Id, dbUser.Id, MembershipStatus.Active));
+            db.RoleAssignments.Add(RoleAssignment.Create(tenantId, owner.Id, SystemRoles.OwnerId, Scope.Tenant));
+            await cryptoService.CreateKeyAsync(tenantId, ct);   // adds a TenantEncryptionKey to the context
+            await db.SaveChangesAsync(ct);
+            return new ResolvedPrincipal(owner.Id, PrincipalType.Member, dbUser.Id);
+        }
+
+        // Otherwise require a matching pending invitation (invitation-gated onboarding).
+        // Only honour an email-matched invitation when the IdP asserts the email is verified.
+        var emailVerified = string.Equals(
+            user.FindFirst("email_verified")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+        var invitation = emailVerified
+            ? await db.Invitations.FirstOrDefaultAsync(
+                i => i.Email == dbUser.Email && i.Status == InvitationStatus.Pending && i.ExpiresAt > DateTime.UtcNow, ct)
+            : null;
+        if (invitation is null)
+        {
+            return null;   // not a member, no invitation → 403 downstream
+        }
+
         var principal = Principal.CreateMember(tenantId, dbUser.DisplayName);
         db.Principals.Add(principal);
         db.Memberships.Add(Membership.Create(tenantId, principal.Id, dbUser.Id, MembershipStatus.Active));
-        if (isFirstMember)
-        {
-            db.RoleAssignments.Add(RoleAssignment.Create(tenantId, principal.Id, SystemRoles.OwnerId, Scope.Tenant));
-        }
+        db.RoleAssignments.Add(RoleAssignment.Create(tenantId, principal.Id, invitation.RoleId, invitation.Scope));
+        invitation.Accept();
         await db.SaveChangesAsync(ct);
-
         return new ResolvedPrincipal(principal.Id, PrincipalType.Member, dbUser.Id);
     }
 }

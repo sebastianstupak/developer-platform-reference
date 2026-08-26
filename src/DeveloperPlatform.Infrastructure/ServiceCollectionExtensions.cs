@@ -5,6 +5,15 @@ using DeveloperPlatform.Application.Audit;
 using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
+using DeveloperPlatform.Application.Grants.AssignRole;
+using DeveloperPlatform.Application.Grants.GetRoles;
+using DeveloperPlatform.Application.Grants.GrantPermission;
+using DeveloperPlatform.Application.Grants.RevokePermissionGrant;
+using DeveloperPlatform.Application.Grants.RevokeRoleAssignment;
+using DeveloperPlatform.Application.Members.GetInvitations;
+using DeveloperPlatform.Application.Members.GetMembers;
+using DeveloperPlatform.Application.Members.InviteMember;
+using DeveloperPlatform.Application.Members.RevokeInvitation;
 using DeveloperPlatform.Application.Projects.CreateProject;
 using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
@@ -17,6 +26,7 @@ using DeveloperPlatform.Infrastructure.Authorization;
 using DeveloperPlatform.Infrastructure.Context;
 using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Dispatching;
+using DeveloperPlatform.Infrastructure.Members;
 using DeveloperPlatform.Infrastructure.Messaging;
 using DeveloperPlatform.Infrastructure.Persistence;
 using DeveloperPlatform.Infrastructure.Projects;
@@ -75,6 +85,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<
             ICommandHandler<DeleteProjectCommand, Unit>,
             DeleteProjectCommandHandler>();
+
+        // Grant-management handlers (Slice 5)
+        services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();
+        services.AddScoped<ICommandHandler<GrantPermissionCommand, GrantPermissionResult>, GrantPermissionCommandHandler>();
+        services.AddScoped<ICommandHandler<RevokeRoleAssignmentCommand, Unit>, RevokeRoleAssignmentCommandHandler>();
+        services.AddScoped<ICommandHandler<RevokePermissionGrantCommand, Unit>, RevokePermissionGrantCommandHandler>();
+        services.AddScoped<IQueryHandler<GetRolesQuery, IReadOnlyList<RoleSummary>>, GetRolesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetMembersQuery, IReadOnlyList<MemberSummary>>, GetMembersQueryHandler>();
+        services.AddScoped<IPrivilegeGuard, PrivilegeGuard>();
+
+        // Member invitations (Slice 5)
+        services.AddScoped<ICommandHandler<InviteMemberCommand, InviteMemberResult>, InviteMemberCommandHandler>();
+        services.AddScoped<ICommandHandler<RevokeInvitationCommand, Unit>, RevokeInvitationCommandHandler>();
+        services.AddScoped<IQueryHandler<GetInvitationsQuery, IReadOnlyList<InvitationSummary>>, GetInvitationsQueryHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();
