@@ -1,0 +1,64 @@
+@page "/roles"
+@attribute [Authorize]
+@inject DeveloperPlatformApiClient ApiClient
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
+
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<PageTitle>Roles &mdash; Developer Platform</PageTitle>
+
+<MudStack Spacing="6">
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Roles</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Built-in roles and the permissions they grant.</MudText>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudDataGrid T="RoleDto" Items="_roles"
+                     Bordered="false" Hover="true" Elevation="0" Dense="true">
+            <Columns>
+                <PropertyColumn Property="r => r.Name" Title="Role" />
+                <TemplateColumn Title="Permissions">
+                    <CellTemplate>
+                        <div class="d-flex flex-wrap" style="gap:4px;">
+                            @foreach (var p in context.Item.Permissions)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@p</MudChip>
+                            }
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <NoRecordsContent>
+                <MudStack AlignItems="AlignItems.Center" Class="py-10" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Shield" Size="Size.Large" Class="mud-text-disabled" />
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">No roles found.</MudText>
+                </MudStack>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<RoleDto> _roles = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+
+        _roles = await ApiClient.GetRolesAsync();
+        _loading = false;
+    }
+}

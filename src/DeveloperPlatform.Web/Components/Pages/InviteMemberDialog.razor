@@ -1,0 +1,59 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Invite member</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="Email"
+                          Label="Email"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Email is required."
+                          InputType="InputType.Email"
+                          Immediate="true" />
+            <MudSelect T="Guid?" @bind-Value="RoleId" Label="Role" Placeholder="Select a role"
+                       Variant="Variant.Outlined" Required="true"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var role in Roles)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)role.Id)">@role.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                The invitee joins with this role when they first sign in with a verified email.
+            </MudText>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(string.IsNullOrWhiteSpace(Email) || RoleId is null)">
+            Send invitation
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<RoleDto> Roles { get; set; } = [];
+
+    private string Email { get; set; } = string.Empty;
+    private Guid? RoleId { get; set; }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Email) || RoleId is null)
+        {
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok((Email.Trim(), RoleId.Value)));
+    }
+}

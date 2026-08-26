@@ -1,0 +1,155 @@
+@page "/members"
+@attribute [Authorize]
+@inject DeveloperPlatformApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
+
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<PageTitle>Members &mdash; Developer Platform</PageTitle>
+
+<MudStack Spacing="6">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5" GutterBottom="true">Members</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">People with access to this tenant.</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenInviteDialog">
+            Invite member
+        </MudButton>
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudDataGrid T="MemberDto" Items="_members" Bordered="false" Hover="true" Elevation="0" Dense="true">
+            <Columns>
+                <PropertyColumn Property="m => m.Email" Title="Email" />
+                <PropertyColumn Property="m => m.DisplayName" Title="Name" />
+                <TemplateColumn Title="Status">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.Item.Status == "Active" ? Color.Success : Color.Default)">
+                            @context.Item.Status
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <NoRecordsContent>
+                <MudStack AlignItems="AlignItems.Center" Class="py-10" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Group" Size="Size.Large" Class="mud-text-disabled" />
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">No members yet. Invite someone to get started.</MudText>
+                </MudStack>
+            </NoRecordsContent>
+        </MudDataGrid>
+
+        <div>
+            <MudText Typo="Typo.subtitle1" GutterBottom="true">Pending invitations</MudText>
+            <MudDataGrid T="InvitationDto" Items="_invitations" Bordered="false" Hover="true" Elevation="0" Dense="true">
+                <Columns>
+                    <PropertyColumn Property="i => i.Email" Title="Email" />
+                    <TemplateColumn Title="Role">
+                        <CellTemplate>@RoleName(context.Item.RoleId)</CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Status">
+                        <CellTemplate>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                     Color="@(context.Item.Status == "Pending" ? Color.Warning : Color.Default)">
+                                @context.Item.Status
+                            </MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Expires" SortBy="i => i.ExpiresAt">
+                        <CellTemplate>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.ExpiresAt.ToString("yyyy-MM-dd")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn Title="" CellStyle="text-align:right;width:56px;">
+                        <CellTemplate>
+                            @if (context.Item.Status == "Pending")
+                            {
+                                <MudIconButton Icon="@Icons.Material.Outlined.Cancel" Size="Size.Small" Color="Color.Default"
+                                               aria-label="Revoke invitation"
+                                               OnClick="@(() => RevokeInvitationAsync(context.Item.Id))" />
+                            }
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary py-4">No pending invitations.</MudText>
+                </NoRecordsContent>
+            </MudDataGrid>
+        </div>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<MemberDto> _members = [];
+    private IReadOnlyList<InvitationDto> _invitations = [];
+    private IReadOnlyList<RoleDto> _roles = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _members = await ApiClient.GetMembersAsync();
+        _invitations = await ApiClient.GetInvitationsAsync();
+        _roles = await ApiClient.GetRolesAsync();
+        _loading = false;
+    }
+
+    private string RoleName(Guid roleId) =>
+        _roles.FirstOrDefault(r => r.Id == roleId)?.Name ?? "—";
+
+    private async Task OpenInviteDialog()
+    {
+        var parameters = new DialogParameters<InviteMemberDialog> { { x => x.Roles, _roles } };
+        var dialog = await DialogService.ShowAsync<InviteMemberDialog>("Invite member", parameters);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is ValueTuple<string, Guid> value)
+        {
+            var (email, roleId) = value;
+            if (await ApiClient.InviteMemberAsync(email, roleId))
+            {
+                Snackbar.Add("Invitation sent.", Severity.Success);
+                await LoadAsync();
+            }
+            else
+            {
+                Snackbar.Add("Couldn't send the invitation. You can only invite to a role you hold.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task RevokeInvitationAsync(Guid id)
+    {
+        if (await ApiClient.RevokeInvitationAsync(id))
+        {
+            Snackbar.Add("Invitation revoked.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            Snackbar.Add("Couldn't revoke the invitation.", Severity.Error);
+        }
+    }
+}
