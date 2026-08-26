@@ -25,6 +25,7 @@ using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Secrets.DeleteSecret;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
+using DeveloperPlatform.Application.Secrets.RotateTenantKey;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
 using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
@@ -111,6 +112,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<ListSecretsQuery, IReadOnlyList<SecretSummary>>, ListSecretsQueryHandler>();
         services.AddScoped<ICommandHandler<RevealSecretCommand, RevealSecretResult>, RevealSecretCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSecretCommand, Unit>, DeleteSecretCommandHandler>();
+        services.AddScoped<ICommandHandler<RotateTenantKeyCommand, RotateTenantKeyResult>, RotateTenantKeyCommandHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

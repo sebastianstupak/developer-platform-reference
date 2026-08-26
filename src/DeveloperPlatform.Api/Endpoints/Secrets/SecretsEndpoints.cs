@@ -5,6 +5,7 @@ using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Secrets.DeleteSecret;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
+using DeveloperPlatform.Application.Secrets.RotateTenantKey;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,6 +45,14 @@ public static class SecretsEndpoints
             return Results.NoContent();
         }).WithName("DeleteSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
 
+        var admin = app.MapGroup("/api/v1/secrets")
+            .WithTags("Secrets").WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
+        admin.MapPost("/rotate-key", async (ICommandDispatcher d, CancellationToken ct) =>
+        {
+            var result = await d.SendAsync<RotateTenantKeyCommand, RotateTenantKeyResult>(new RotateTenantKeyCommand(), ct);
+            return Results.Ok(new RotateKeyResponse(result.SecretsReEncrypted));
+        }).WithName("RotateTenantKey").Produces<RotateKeyResponse>();
+
         return app;
     }
 
@@ -52,4 +61,6 @@ public static class SecretsEndpoints
     public record SecretResponse(string Name, DateTime CreatedAt, DateTime UpdatedAt);
 
     public record RevealResponse(string Name, string Value);
+
+    public record RotateKeyResponse(int SecretsReEncrypted);
 }
