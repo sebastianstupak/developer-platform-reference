@@ -2,6 +2,7 @@ using DeveloperPlatform.Application.ApiKeys.GetApiKeys;
 using DeveloperPlatform.Application.ApiKeys.IssueApiKey;
 using DeveloperPlatform.Application.ApiKeys.RevokeApiKey;
 using DeveloperPlatform.Application.Audit;
+using DeveloperPlatform.Application.Audit.GetAuditCommandTypes;
 using DeveloperPlatform.Application.Audit.GetAuditEventDetail;
 using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Authorization;
@@ -134,6 +135,7 @@ public static class ServiceCollectionExtensions
         // Audit (Slice A)
         services.AddScoped<IQueryHandler<GetAuditEventsQuery, PagedResult<AuditEventSummary>>, GetAuditEventsQueryHandler>();
         services.AddScoped<IQueryHandler<GetAuditEventDetailQuery, AuditEventDetail>, GetAuditEventDetailQueryHandler>();
+        services.AddScoped<IQueryHandler<GetAuditCommandTypesQuery, IReadOnlyList<string>>, GetAuditCommandTypesQueryHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();

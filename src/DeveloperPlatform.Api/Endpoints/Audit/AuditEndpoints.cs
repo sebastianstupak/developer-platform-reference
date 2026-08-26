@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Asp.Versioning.Builder;
+using DeveloperPlatform.Application.Audit.GetAuditCommandTypes;
 using DeveloperPlatform.Application.Audit.GetAuditEventDetail;
 using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Common;
@@ -42,6 +43,13 @@ public static class AuditEndpoints
                     s.PrincipalType, s.IpAddress, s.IsCrossTenant, s.ProjectId, s.EnvironmentId),
                 detail.CrossTenantReason, detail.PayloadJson, detail.PayloadAvailable));
         }).WithName("GetAuditEventDetail").Produces<AuditDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/command-types", async (IQueryDispatcher d, CancellationToken ct) =>
+        {
+            var types = await d.SendAsync<GetAuditCommandTypesQuery, IReadOnlyList<string>>(
+                new GetAuditCommandTypesQuery(), ct);
+            return Results.Ok(types);
+        }).WithName("GetAuditCommandTypes").Produces<IReadOnlyList<string>>();
 
         return app;
     }

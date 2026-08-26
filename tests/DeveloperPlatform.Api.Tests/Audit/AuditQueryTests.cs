@@ -172,6 +172,21 @@ public class AuditQueryTests : IAsyncLifetime
         Assert.Equal("", detail.PayloadJson);
     }
 
+    [Fact]
+    public async Task CommandTypes_Returns_Distinct_Sorted()
+    {
+        _db.AuditEvents.Add(Ev("BravoCommand", AuditStatus.Success, new DateTime(2026, 1, 1)));
+        _db.AuditEvents.Add(Ev("AlphaCommand", AuditStatus.Success, new DateTime(2026, 1, 2)));
+        _db.AuditEvents.Add(Ev("AlphaCommand", AuditStatus.Failed, new DateTime(2026, 1, 3)));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Audit.GetAuditCommandTypesQueryHandler(_db);
+        var types = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Audit.GetAuditCommandTypes.GetAuditCommandTypesQuery());
+
+        Assert.Equal(new[] { "AlphaCommand", "BravoCommand" }, types);
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
