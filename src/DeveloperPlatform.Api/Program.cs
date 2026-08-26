@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
+using DeveloperPlatform.Api.Endpoints.Audit;
 using DeveloperPlatform.Api.Endpoints.Environments;
 using DeveloperPlatform.Api.Endpoints.Members;
 using DeveloperPlatform.Api.Endpoints.Projects;
@@ -131,6 +132,7 @@ try
     app.MapApiKeys(versionSet);
     app.MapPrincipalGrants(versionSet);
     app.MapMembers(versionSet);
+    app.MapAudit(versionSet);
 
     app.Run();
 }

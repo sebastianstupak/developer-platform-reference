@@ -1,0 +1,104 @@
+@using System.Text.Json
+@using System.Text.Json.Nodes
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Audit event &mdash; @Detail.Event.CommandType</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4" Style="width:min(640px, 92vw);">
+            <MudSimpleTable Dense="true" Elevation="0" Outlined="true">
+                <tbody>
+                    <tr>
+                        <td class="mud-text-secondary" style="width:140px;">Time</td>
+                        <td>@Detail.Event.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">Actor</td>
+                        <td>@(Detail.Event.ActorDisplay ?? "system")</td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">Action</td>
+                        <td>@Detail.Event.CommandType</td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">Status</td>
+                        <td>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                     Color="@(Detail.Event.Status == "Success" ? Color.Success : Color.Error)">
+                                @Detail.Event.Status
+                            </MudChip>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">IP</td>
+                        <td>@Detail.Event.IpAddress</td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">Scope</td>
+                        <td>@ScopeDisplay()</td>
+                    </tr>
+                    <tr>
+                        <td class="mud-text-secondary">Principal type</td>
+                        <td>@(Detail.Event.PrincipalType ?? "—")</td>
+                    </tr>
+                    @if (Detail.CrossTenantReason is not null)
+                    {
+                        <tr>
+                            <td class="mud-text-secondary">Cross-tenant reason</td>
+                            <td>@Detail.CrossTenantReason</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+
+            <div>
+                <MudText Typo="Typo.subtitle2" GutterBottom="true">Payload</MudText>
+                @if (Detail.PayloadAvailable)
+                {
+                    <MudPaper Class="pa-3" Elevation="0" Outlined="true" Style="overflow-x:auto;">
+                        <pre style="font-family:monospace; margin:0; white-space:pre;">@PayloadDisplay()</pre>
+                    </MudPaper>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Warning">
+                        Payload unavailable (encryption key rotated away or shredded).
+                    </MudAlert>
+                }
+            </div>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Default">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public AuditDetailDto Detail { get; set; } = default!;
+
+    private string ScopeDisplay()
+    {
+        var scope = Detail.Event.EnvironmentId ?? Detail.Event.ProjectId;
+        return scope is null ? "—" : scope.Value.ToString();
+    }
+
+    private string PayloadDisplay()
+    {
+        try
+        {
+            var node = JsonNode.Parse(Detail.PayloadJson);
+            return node?.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) ?? Detail.PayloadJson;
+        }
+        catch
+        {
+            return Detail.PayloadJson;
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+}
