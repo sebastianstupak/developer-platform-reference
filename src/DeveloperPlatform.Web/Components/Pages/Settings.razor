@@ -1,0 +1,66 @@
+@page "/settings"
+@attribute [Authorize]
+@inject DeveloperPlatformApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
+
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<PageTitle>Settings &mdash; Developer Platform</PageTitle>
+
+<MudStack Spacing="6">
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Settings</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Tenant-wide configuration.</MudText>
+    </div>
+
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">Encryption</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Rotating the tenant encryption key re-encrypts every secret under a freshly generated key.
+            Old keys are retained so the audit history for past reveals stays readable.
+        </MudText>
+        <div>
+            <MudButton Variant="Variant.Filled" Color="Color.Error"
+                       StartIcon="@Icons.Material.Outlined.Key"
+                       OnClick="OpenRotateKeyDialog">
+                Rotate encryption key
+            </MudButton>
+        </div>
+    </MudStack>
+</MudStack>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+    }
+
+    private async Task OpenRotateKeyDialog()
+    {
+        var dialog = await DialogService.ShowAsync<RotateKeyDialog>("Rotate encryption key");
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        try
+        {
+            var count = await ApiClient.RotateKeyAsync();
+            Snackbar.Add($"Re-encrypted {count} secret(s).", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Couldn't rotate the encryption key. You may not have permission.", Severity.Error);
+        }
+    }
+}
