@@ -1,8 +1,10 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
+using DeveloperPlatform.Api.Endpoints.Environments;
 using DeveloperPlatform.Api.Endpoints.Members;
 using DeveloperPlatform.Api.Endpoints.Projects;
 using DeveloperPlatform.Api.Endpoints.Permissions;
+using DeveloperPlatform.Api.Endpoints.Secrets;
 using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Api.Endpoints.Principals;
 using DeveloperPlatform.Api.Endpoints.ServiceAccounts;
@@ -89,6 +91,7 @@ try
     builder.Services.ConfigureHttpJsonOptions(options =>
         options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
     builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.ForbiddenExceptionHandler>();
+    builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.RequestExceptionHandler>();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
@@ -121,6 +124,8 @@ try
 
     app.MapHealth(versionSet);
     app.MapProjects(versionSet);
+    app.MapEnvironments(versionSet);
+    app.MapSecrets(versionSet);
     app.MapPermissions(versionSet);
     app.MapServiceAccounts(versionSet);
     app.MapApiKeys(versionSet);

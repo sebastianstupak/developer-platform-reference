@@ -9,6 +9,7 @@ public class Secret : TenantEntity
     public string Name { get; private set; } = string.Empty;
     public byte[] EncryptedValue { get; private set; } = [];
     public Guid KeyId { get; private set; }   // which TenantEncryptionKey encrypted this
+    public DateTime UpdatedAt { get; private set; }
 
     private Secret() { }
 
@@ -24,7 +25,8 @@ public class Secret : TenantEntity
             EnvironmentId = environmentId,
             Name = name,
             EncryptedValue = encryptedValue,
-            KeyId = keyId
+            KeyId = keyId,
+            UpdatedAt = DateTime.UtcNow
         };
     }
 
@@ -32,5 +34,6 @@ public class Secret : TenantEntity
     {
         EncryptedValue = encryptedValue;
         KeyId = keyId;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

@@ -5,6 +5,10 @@ using DeveloperPlatform.Application.Audit;
 using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
+using DeveloperPlatform.Application.Environments.CreateEnvironment;
+using DeveloperPlatform.Application.Environments.DeleteEnvironment;
+using DeveloperPlatform.Application.Environments.GetEnvironments;
+using DeveloperPlatform.Application.Environments.RenameEnvironment;
 using DeveloperPlatform.Application.Grants.AssignRole;
 using DeveloperPlatform.Application.Grants.GetRoles;
 using DeveloperPlatform.Application.Grants.GrantPermission;
@@ -18,6 +22,11 @@ using DeveloperPlatform.Application.Projects.CreateProject;
 using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Application.Secrets.DeleteSecret;
+using DeveloperPlatform.Application.Secrets.ListSecrets;
+using DeveloperPlatform.Application.Secrets.RevealSecret;
+using DeveloperPlatform.Application.Secrets.RotateTenantKey;
+using DeveloperPlatform.Application.Secrets.SetSecret;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
 using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
 using DeveloperPlatform.Application.Tenancy;
@@ -27,10 +36,12 @@ using DeveloperPlatform.Infrastructure.Authorization;
 using DeveloperPlatform.Infrastructure.Context;
 using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Dispatching;
+using DeveloperPlatform.Infrastructure.Environments;
 using DeveloperPlatform.Infrastructure.Members;
 using DeveloperPlatform.Infrastructure.Messaging;
 using DeveloperPlatform.Infrastructure.Persistence;
 using DeveloperPlatform.Infrastructure.Projects;
+using DeveloperPlatform.Infrastructure.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -87,6 +98,21 @@ public static class ServiceCollectionExtensions
         services.AddScoped<
             ICommandHandler<DeleteProjectCommand, Unit>,
             DeleteProjectCommandHandler>();
+
+        // Environments (Slice A)
+        services.AddScoped<IProjectEnvironmentRepository, ProjectEnvironmentRepository>();
+        services.AddScoped<ICommandHandler<CreateEnvironmentCommand, CreateEnvironmentResult>, CreateEnvironmentCommandHandler>();
+        services.AddScoped<ICommandHandler<RenameEnvironmentCommand, Unit>, RenameEnvironmentCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteEnvironmentCommand, Unit>, DeleteEnvironmentCommandHandler>();
+        services.AddScoped<IQueryHandler<GetEnvironmentsQuery, IReadOnlyList<EnvironmentSummary>>, GetEnvironmentsQueryHandler>();
+
+        // Secrets (Slice B)
+        services.AddScoped<ISecretRepository, SecretRepository>();
+        services.AddScoped<ICommandHandler<SetSecretCommand, Unit>, SetSecretCommandHandler>();
+        services.AddScoped<IQueryHandler<ListSecretsQuery, IReadOnlyList<SecretSummary>>, ListSecretsQueryHandler>();
+        services.AddScoped<ICommandHandler<RevealSecretCommand, RevealSecretResult>, RevealSecretCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteSecretCommand, Unit>, DeleteSecretCommandHandler>();
+        services.AddScoped<ICommandHandler<RotateTenantKeyCommand, RotateTenantKeyResult>, RotateTenantKeyCommandHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

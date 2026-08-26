@@ -23,4 +23,10 @@ public class ProjectEnvironment : TenantEntity
             Type = type
         };
     }
+
+    public void Rename(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+    }
 }

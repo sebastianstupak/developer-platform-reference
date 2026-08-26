@@ -1,0 +1,71 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(IsCreateMode ? "New environment" : $"Rename environment — {Name}")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Style="width:min(480px, 92vw);">
+            <MudTextField @bind-Value="Name"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Name is required."
+                          MaxLength="200"
+                          Immediate="true" />
+            @if (IsCreateMode)
+            {
+                <MudSelect T="string" @bind-Value="Type" Label="Type" Variant="Variant.Outlined"
+                           Required="true" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="string" Value="@("Development")">Development</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Staging")">Staging</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Production")">Production</MudSelectItem>
+                </MudSelect>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(string.IsNullOrWhiteSpace(Name) || (IsCreateMode && string.IsNullOrWhiteSpace(Type)))">
+            @(IsCreateMode ? "Create" : "Rename")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Type { get; set; } = "Development";
+
+    /// <summary>
+    /// When true (create mode), the Type selector is shown and the dialog returns (name, type).
+    /// When false (rename mode), only Name is editable and the dialog returns the trimmed name.
+    /// </summary>
+    [Parameter]
+    public bool IsCreateMode { get; set; } = true;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Name) || (IsCreateMode && string.IsNullOrWhiteSpace(Type)))
+        {
+            return;
+        }
+
+        if (IsCreateMode)
+        {
+            MudDialog.Close(DialogResult.Ok((Name.Trim(), Type)));
+        }
+        else
+        {
+            MudDialog.Close(DialogResult.Ok(Name.Trim()));
+        }
+    }
+}
