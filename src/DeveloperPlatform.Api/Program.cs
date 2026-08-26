@@ -91,6 +91,7 @@ try
     builder.Services.ConfigureHttpJsonOptions(options =>
         options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
     builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.ForbiddenExceptionHandler>();
+    builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.RequestExceptionHandler>();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
