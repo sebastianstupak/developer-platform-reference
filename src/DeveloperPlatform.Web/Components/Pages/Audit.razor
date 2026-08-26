@@ -1,0 +1,184 @@
+@page "/audit"
+@attribute [Authorize]
+@inject DeveloperPlatformApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
+
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<PageTitle>Audit log &mdash; Developer Platform</PageTitle>
+
+<MudStack Spacing="6">
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Audit log</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">A record of actions taken in this tenant.</MudText>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Class="pa-4" Elevation="0" Outlined="true">
+            <MudStack Row="true" Spacing="4" AlignItems="AlignItems.End" Class="flex-wrap">
+                <MudDatePicker Label="From" @bind-Date="_from" @bind-Date:after="ReloadAsync"
+                               Variant="Variant.Outlined" Clearable="true" Style="min-width:180px;" />
+                <MudDatePicker Label="To" @bind-Date="_to" @bind-Date:after="ReloadAsync"
+                               Variant="Variant.Outlined" Clearable="true" Style="min-width:180px;" />
+                <MudSelect T="Guid?" Label="Actor" @bind-Value="_actorId" @bind-Value:after="ReloadAsync"
+                           Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:220px;">
+                    @if (_members.Count > 0)
+                    {
+                        <MudListSubheader>Members</MudListSubheader>
+                        @foreach (var m in _members)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)m.PrincipalId)">@m.Email</MudSelectItem>
+                        }
+                    }
+                    @if (_serviceAccounts.Count > 0)
+                    {
+                        <MudListSubheader>Service accounts</MudListSubheader>
+                        @foreach (var s in _serviceAccounts)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)s.PrincipalId)">@s.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+                <MudSelect T="string" Label="Action" @bind-Value="_action" @bind-Value:after="ReloadAsync"
+                           Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:220px;">
+                    @foreach (var c in _commandTypes)
+                    {
+                        <MudSelectItem T="string" Value="@c">@c</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudSelect T="string" Label="Status" @bind-Value="_status" @bind-Value:after="ReloadAsync"
+                           Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:160px;">
+                    <MudSelectItem T="string" Value="@("Success")">Success</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Failed")">Failed</MudSelectItem>
+                </MudSelect>
+                <MudSwitch T="bool" Label="Cross-tenant only" @bind-Value="_crossTenantOnly" @bind-Value:after="ReloadAsync"
+                           Color="Color.Primary" />
+            </MudStack>
+        </MudPaper>
+
+        <MudDataGrid T="AuditEventDto" @ref="_grid" ServerData="LoadServerData"
+                     Bordered="false" Hover="true" Elevation="0" Dense="true"
+                     Filterable="false" SortMode="SortMode.None">
+            <Columns>
+                <TemplateColumn Title="Time">
+                    <CellTemplate>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            @if (context.Item.IsCrossTenant)
+                            {
+                                <MudTooltip Text="Cross-tenant action">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Warning" Size="Size.Small" Color="Color.Warning" />
+                                </MudTooltip>
+                            }
+                            <MudText Typo="Typo.body2">@context.Item.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Actor">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2">@(context.Item.ActorDisplay ?? "system")</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="e => e.CommandType" Title="Action" />
+                <TemplateColumn Title="Status">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.Item.Status == "Success" ? Color.Success : Color.Error)">
+                            @context.Item.Status
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Scope">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@ScopeDisplay(context.Item)</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="e => e.IpAddress" Title="IP" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="AuditEventDto" PageSizeOptions="new[] { 25, 50, 100 }" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudStack AlignItems="AlignItems.Center" Class="py-10" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.History" Size="Size.Large" Class="mud-text-disabled" />
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">No audit events.</MudText>
+                </MudStack>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private IReadOnlyList<MemberDto> _members = [];
+    private IReadOnlyList<ServiceAccountDto> _serviceAccounts = [];
+    private IReadOnlyList<string> _commandTypes = [];
+
+    private MudDataGrid<AuditEventDto>? _grid;
+
+    private DateTime? _from;
+    private DateTime? _to;
+    private Guid? _actorId;
+    private string? _action;
+    private string? _status;
+    private bool _crossTenantOnly;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+
+        _members = await ApiClient.GetMembersAsync();
+        _serviceAccounts = await ApiClient.GetServiceAccountsAsync();
+        _commandTypes = await ApiClient.GetAuditCommandTypesAsync();
+
+        _loading = false;
+    }
+
+    private async Task<GridData<AuditEventDto>> LoadServerData(GridState<AuditEventDto> state, CancellationToken ct)
+    {
+        var filter = new AuditFilterDto(
+            _from,
+            _to,
+            _actorId,
+            _action,
+            _status,
+            _crossTenantOnly ? true : null);
+
+        var result = await ApiClient.GetAuditEventsAsync(filter, state.Page + 1, state.PageSize, ct);
+
+        return new GridData<AuditEventDto>
+        {
+            Items = result.Items,
+            TotalItems = result.Total,
+        };
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_grid is null)
+        {
+            return;
+        }
+
+        _grid.NavigateTo(Page.First);
+        await _grid.ReloadServerData();
+    }
+
+    private static string ScopeDisplay(AuditEventDto e)
+    {
+        var scope = e.EnvironmentId ?? e.ProjectId;
+        return scope is null ? "—" : scope.Value.ToString()[..8];
+    }
+}
