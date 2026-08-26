@@ -81,6 +81,24 @@ public class SecretTests : IAsyncLifetime
         Assert.Equal(new[] { "A", "B" }, list.Select(s => s.Name));
     }
 
+    [Fact]
+    public async Task Reveal_Returns_Original_Plaintext()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var (payload, keyId) = await crypto.EncryptAsync(_tenant, "sesame");
+        _db.Secrets.Add(Secret.Create(_tenant, _project, _env, "PW", payload, keyId));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.RevealSecretCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db), crypto,
+            new TestExecutionContext { TenantId = _tenant });
+        var result = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.RevealSecret.RevealSecretCommand(_project, _env, "PW"));
+        Assert.Equal("sesame", result.Value);
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
