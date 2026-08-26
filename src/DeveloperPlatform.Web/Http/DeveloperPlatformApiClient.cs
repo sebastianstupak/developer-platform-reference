@@ -201,4 +201,77 @@ public sealed class DeveloperPlatformApiClient
             return false;
         }
     }
+
+    // --- Environments & Secrets (Slice D) ---
+
+    public Task<IReadOnlyList<EnvironmentDto>> GetEnvironmentsAsync(Guid projectId, CancellationToken ct = default)
+        => GetListAsync<EnvironmentDto>($"/api/v1/projects/{projectId}/environments", ct);
+
+    public async Task<Guid> CreateEnvironmentAsync(
+        Guid projectId, string name, string type, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsJsonAsync(
+            $"/api/v1/projects/{projectId}/environments", new { name, type }, ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
+        return body.GetProperty("environmentId").GetGuid();
+    }
+
+    public async Task RenameEnvironmentAsync(
+        Guid projectId, Guid environmentId, string name, CancellationToken ct = default)
+    {
+        var response = await _http.PutAsJsonAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}", new { name }, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteEnvironmentAsync(
+        Guid projectId, Guid environmentId, CancellationToken ct = default)
+    {
+        var response = await _http.DeleteAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}", ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public Task<IReadOnlyList<SecretDto>> GetSecretsAsync(
+        Guid projectId, Guid environmentId, CancellationToken ct = default)
+        => GetListAsync<SecretDto>($"/api/v1/projects/{projectId}/environments/{environmentId}/secrets", ct);
+
+    public async Task SetSecretAsync(
+        Guid projectId, Guid environmentId, string name, string value, CancellationToken ct = default)
+    {
+        var response = await _http.PutAsJsonAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}",
+            new { value },
+            ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<string> RevealSecretAsync(
+        Guid projectId, Guid environmentId, string name, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}/reveal",
+            null,
+            ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<RevealDto>(ct);
+        return body!.Value;
+    }
+
+    public async Task DeleteSecretAsync(
+        Guid projectId, Guid environmentId, string name, CancellationToken ct = default)
+    {
+        var response = await _http.DeleteAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}", ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<int> RotateKeyAsync(CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync("/api/v1/secrets/rotate-key", null, ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<RotateKeyDto>(ct);
+        return body!.SecretsReEncrypted;
+    }
 }

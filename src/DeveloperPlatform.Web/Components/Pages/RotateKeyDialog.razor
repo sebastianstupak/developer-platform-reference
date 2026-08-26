@@ -1,0 +1,51 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Rotate encryption key</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Style="width:min(480px, 92vw);">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+                This re-encrypts every secret in the tenant under a new key. Old keys are retained so
+                past audit history stays readable. This action cannot be undone.
+            </MudAlert>
+            <MudText Typo="Typo.body2">
+                Type <strong>@ConfirmationPhrase</strong> to confirm.
+            </MudText>
+            <MudTextField @bind-Value="_confirmation"
+                          Label="Confirmation"
+                          Variant="Variant.Outlined"
+                          Placeholder="@ConfirmationPhrase"
+                          Immediate="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Error"
+                   Disabled="@(_confirmation != ConfirmationPhrase)">
+            Rotate key
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private const string ConfirmationPhrase = "ROTATE";
+
+    private string _confirmation = string.Empty;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (_confirmation != ConfirmationPhrase)
+        {
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}
