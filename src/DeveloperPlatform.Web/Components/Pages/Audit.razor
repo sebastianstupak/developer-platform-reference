@@ -68,7 +68,8 @@
 
         <MudDataGrid T="AuditEventDto" @ref="_grid" ServerData="LoadServerData"
                      Bordered="false" Hover="true" Elevation="0" Dense="true"
-                     Filterable="false" SortMode="SortMode.None">
+                     Filterable="false" SortMode="SortMode.None"
+                     RowClick="@(args => OpenDetailAsync(args.Item))">
             <Columns>
                 <TemplateColumn Title="Time">
                     <CellTemplate>
@@ -150,7 +151,7 @@
     {
         var filter = new AuditFilterDto(
             _from,
-            _to,
+            _to?.Date.AddDays(1).AddTicks(-1),
             _actorId,
             _action,
             _status,
@@ -180,5 +181,18 @@
     {
         var scope = e.EnvironmentId ?? e.ProjectId;
         return scope is null ? "—" : scope.Value.ToString()[..8];
+    }
+
+    private async Task OpenDetailAsync(AuditEventDto item)
+    {
+        var detail = await ApiClient.GetAuditEventDetailAsync(item.Id);
+        if (detail is null)
+        {
+            Snackbar.Add("Couldn't load the audit event detail.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters<AuditDetailDialog> { { x => x.Detail, detail } };
+        await DialogService.ShowAsync<AuditDetailDialog>($"Audit event — {detail.Event.CommandType}", parameters);
     }
 }
