@@ -1,0 +1,27 @@
+using Asp.Versioning;
+using Asp.Versioning.Builder;
+using DeveloperPlatform.Application.Commands;
+using DeveloperPlatform.Application.Secrets.SetSecret;
+using Microsoft.AspNetCore.Mvc;
+
+namespace DeveloperPlatform.Api.Endpoints.Secrets;
+
+public static class SecretsEndpoints
+{
+    public static IEndpointRouteBuilder MapSecrets(this IEndpointRouteBuilder app, ApiVersionSet versionSet)
+    {
+        var group = app.MapGroup("/api/v1/projects/{projectId:guid}/environments/{environmentId:guid}/secrets")
+            .WithTags("Secrets").WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
+
+        group.MapPut("/{name}", async (Guid projectId, Guid environmentId, string name,
+            [FromBody] SetSecretRequest req, ICommandDispatcher d, CancellationToken ct) =>
+        {
+            await d.SendAsync<SetSecretCommand, Unit>(new SetSecretCommand(projectId, environmentId, name, req.Value), ct);
+            return Results.NoContent();
+        }).WithName("SetSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status400BadRequest);
+
+        return app;
+    }
+
+    public record SetSecretRequest(string Value);
+}

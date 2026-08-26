@@ -22,6 +22,7 @@ using DeveloperPlatform.Application.Projects.CreateProject;
 using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Application.Secrets.SetSecret;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
 using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
 using DeveloperPlatform.Application.Tenancy;
@@ -36,6 +37,7 @@ using DeveloperPlatform.Infrastructure.Members;
 using DeveloperPlatform.Infrastructure.Messaging;
 using DeveloperPlatform.Infrastructure.Persistence;
 using DeveloperPlatform.Infrastructure.Projects;
+using DeveloperPlatform.Infrastructure.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,6 +101,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<RenameEnvironmentCommand, Unit>, RenameEnvironmentCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteEnvironmentCommand, Unit>, DeleteEnvironmentCommandHandler>();
         services.AddScoped<IQueryHandler<GetEnvironmentsQuery, IReadOnlyList<EnvironmentSummary>>, GetEnvironmentsQueryHandler>();
+
+        // Secrets (Slice B)
+        services.AddScoped<ISecretRepository, SecretRepository>();
+        services.AddScoped<ICommandHandler<SetSecretCommand, Unit>, SetSecretCommandHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

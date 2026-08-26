@@ -2,6 +2,7 @@ using DeveloperPlatform.Application.Context;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Domain.Authorization;
 using DeveloperPlatform.Domain.Secrets;
+using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -46,6 +47,26 @@ public class SecretTests : IAsyncLifetime
         await _db.SaveChangesAsync();
         Assert.NotNull(await repo.GetAsync(_env, "TOKEN"));
         Assert.Null(await repo.GetAsync(_env, "MISSING"));
+    }
+
+    [Fact]
+    public async Task Set_Then_Set_Overwrites_And_Encrypts()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db), crypto,
+            new TestExecutionContext { TenantId = _tenant });
+
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "first"));
+        await _db.SaveChangesAsync();
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "second"));
+        await _db.SaveChangesAsync();
+
+        var stored = await _db.Secrets.AsNoTracking().SingleAsync();
+        Assert.DoesNotContain("second", System.Text.Encoding.UTF8.GetString(stored.EncryptedValue));
+        Assert.Equal("second", await crypto.DecryptAsync(_tenant, stored.EncryptedValue, stored.KeyId));
     }
 
     private sealed class TestExecutionContext : IExecutionContext

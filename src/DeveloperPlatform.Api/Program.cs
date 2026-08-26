@@ -4,6 +4,7 @@ using DeveloperPlatform.Api.Endpoints.Environments;
 using DeveloperPlatform.Api.Endpoints.Members;
 using DeveloperPlatform.Api.Endpoints.Projects;
 using DeveloperPlatform.Api.Endpoints.Permissions;
+using DeveloperPlatform.Api.Endpoints.Secrets;
 using DeveloperPlatform.Api.Endpoints.Health;
 using DeveloperPlatform.Api.Endpoints.Principals;
 using DeveloperPlatform.Api.Endpoints.ServiceAccounts;
@@ -123,6 +124,7 @@ try
     app.MapHealth(versionSet);
     app.MapProjects(versionSet);
     app.MapEnvironments(versionSet);
+    app.MapSecrets(versionSet);
     app.MapPermissions(versionSet);
     app.MapServiceAccounts(versionSet);
     app.MapApiKeys(versionSet);
