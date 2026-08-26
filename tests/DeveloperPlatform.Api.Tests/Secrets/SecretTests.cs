@@ -99,6 +99,20 @@ public class SecretTests : IAsyncLifetime
         Assert.Equal("sesame", result.Value);
     }
 
+    [Fact]
+    public async Task Delete_Removes_Secret_And_404_When_Absent()
+    {
+        _db.Secrets.Add(Secret.Create(_tenant, _project, _env, "X", new byte[] { 1 }, Guid.NewGuid()));
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.DeleteSecretCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db));
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.DeleteSecret.DeleteSecretCommand(_project, _env, "X"));
+        await _db.SaveChangesAsync();
+        Assert.Empty(await _db.Secrets.ToListAsync());
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            handler.HandleAsync(new DeveloperPlatform.Application.Secrets.DeleteSecret.DeleteSecretCommand(_project, _env, "X")));
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }

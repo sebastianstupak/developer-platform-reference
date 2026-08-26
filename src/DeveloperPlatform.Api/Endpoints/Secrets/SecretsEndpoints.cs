@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Asp.Versioning.Builder;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Application.Secrets.DeleteSecret;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
 using DeveloperPlatform.Application.Secrets.SetSecret;
@@ -36,6 +37,12 @@ public static class SecretsEndpoints
                 new RevealSecretCommand(projectId, environmentId, name), ct);
             return Results.Ok(new RevealResponse(result.Name, result.Value));
         }).WithName("RevealSecret").Produces<RevealResponse>();
+
+        group.MapDelete("/{name}", async (Guid projectId, Guid environmentId, string name, ICommandDispatcher d, CancellationToken ct) =>
+        {
+            await d.SendAsync<DeleteSecretCommand, Unit>(new DeleteSecretCommand(projectId, environmentId, name), ct);
+            return Results.NoContent();
+        }).WithName("DeleteSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
     }
