@@ -5,6 +5,10 @@ using DeveloperPlatform.Application.Audit;
 using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Crypto;
+using DeveloperPlatform.Application.Environments.CreateEnvironment;
+using DeveloperPlatform.Application.Environments.DeleteEnvironment;
+using DeveloperPlatform.Application.Environments.GetEnvironments;
+using DeveloperPlatform.Application.Environments.RenameEnvironment;
 using DeveloperPlatform.Application.Grants.AssignRole;
 using DeveloperPlatform.Application.Grants.GetRoles;
 using DeveloperPlatform.Application.Grants.GrantPermission;
@@ -27,6 +31,7 @@ using DeveloperPlatform.Infrastructure.Authorization;
 using DeveloperPlatform.Infrastructure.Context;
 using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Dispatching;
+using DeveloperPlatform.Infrastructure.Environments;
 using DeveloperPlatform.Infrastructure.Members;
 using DeveloperPlatform.Infrastructure.Messaging;
 using DeveloperPlatform.Infrastructure.Persistence;
@@ -87,6 +92,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<
             ICommandHandler<DeleteProjectCommand, Unit>,
             DeleteProjectCommandHandler>();
+
+        // Environments (Slice A)
+        services.AddScoped<IProjectEnvironmentRepository, ProjectEnvironmentRepository>();
+        services.AddScoped<ICommandHandler<CreateEnvironmentCommand, CreateEnvironmentResult>, CreateEnvironmentCommandHandler>();
+        services.AddScoped<ICommandHandler<RenameEnvironmentCommand, Unit>, RenameEnvironmentCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteEnvironmentCommand, Unit>, DeleteEnvironmentCommandHandler>();
+        services.AddScoped<IQueryHandler<GetEnvironmentsQuery, IReadOnlyList<EnvironmentSummary>>, GetEnvironmentsQueryHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

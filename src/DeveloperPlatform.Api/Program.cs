@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using DeveloperPlatform.Api.Endpoints.ApiKeys;
+using DeveloperPlatform.Api.Endpoints.Environments;
 using DeveloperPlatform.Api.Endpoints.Members;
 using DeveloperPlatform.Api.Endpoints.Projects;
 using DeveloperPlatform.Api.Endpoints.Permissions;
@@ -121,6 +122,7 @@ try
 
     app.MapHealth(versionSet);
     app.MapProjects(versionSet);
+    app.MapEnvironments(versionSet);
     app.MapPermissions(versionSet);
     app.MapServiceAccounts(versionSet);
     app.MapApiKeys(versionSet);
