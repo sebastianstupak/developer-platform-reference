@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- All three queries carry `[RequiresPermission(Permission.AuditRead)]` and are **Tenant-scoped** (no `IResourceScoped` → the dispatcher defaults to `Scope.Tenant`).
+- All three queries carry `[RequiresPermission(Permission.AuditRead)]` and implement `IResourceScoped` returning `Scope.Tenant`, pinning the permission check at tenant scope regardless of any ambient `project_id`/`environment_id` claim (do NOT rely on the dispatcher's default — a scoped claim would otherwise narrow the check while the data stays tenant-wide).
 - The list query must NOT decrypt payloads; the detail query decrypts exactly one.
 - Detail decryption degrades gracefully: catch the crypto failure (missing/shredded key) and return `PayloadAvailable = false`, never a 500.
 - `AuditEvent` is `ITenantScoped` → the global query filter bounds every read to the caller's tenant automatically.
@@ -21,7 +21,7 @@
 
 ## Conventions reference (verified against the codebase)
 
-- **Query:** `[RequiresPermission(Permission.X)] public record FooQuery(...) : IQuery<TResult>;` (add `, IResourceScoped { public Scope ResourceScope => ...; }` only for non-tenant scope — NOT needed here).
+- **Query:** `[RequiresPermission(Permission.X)] public record FooQuery(...) : IQuery<TResult>, IResourceScoped { public Scope ResourceScope => Scope.Tenant; }` — the audit queries pin `Scope.Tenant` explicitly rather than relying on the dispatcher default.
 - **Query handler:** `public sealed class FooQueryHandler(ApplicationDbContext db) : IQueryHandler<FooQuery, TResult> { public async Task<TResult> HandleAsync(FooQuery query, CancellationToken ct = default) {...} }`. Extra deps (`ITenantCryptoService`, `IExecutionContext`) are constructor-injected.
 - **DI:** register each handler in `src/DeveloperPlatform.Infrastructure/ServiceCollectionExtensions.cs`.
 - **Endpoints:** `public static class FooEndpoints { public static IEndpointRouteBuilder MapFoo(this IEndpointRouteBuilder app, ApiVersionSet versionSet) {...} }`, registered in `src/DeveloperPlatform.Api/Program.cs`.

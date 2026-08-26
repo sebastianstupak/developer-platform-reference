@@ -34,7 +34,7 @@ regress.
   conventions (records, `[RequiresPermission]`, `IQueryDispatcher`,
   handlers query `ApplicationDbContext` directly for reads).
 - Both queries carry `[RequiresPermission(Permission.AuditRead)]` at **Tenant
-  scope** (no `IResourceScoped` → the dispatcher defaults to `Scope.Tenant`).
+  scope** — each query implements `IResourceScoped` returning `Scope.Tenant`, pinning the permission check at tenant scope regardless of any ambient `project_id`/`environment_id` claim (relying on the dispatcher's default would let a sub-tenant-scoped `audit:read` grant read the whole tenant's log when such a claim is present).
 - `AuditEvent` is `ITenantScoped`, so the global query filter bounds every
   read to the caller's tenant automatically.
 - The list must NOT decrypt payloads; the detail decrypts exactly one.
