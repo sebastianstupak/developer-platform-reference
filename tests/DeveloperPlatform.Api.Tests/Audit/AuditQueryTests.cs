@@ -51,7 +51,7 @@ public class AuditQueryTests : IAsyncLifetime
 
         var handler = new GetAuditEventsQueryHandler(_db);
         var page1 = await handler.HandleAsync(new GetAuditEventsQuery(
-            new AuditFilter(null, null, null, null, null, null), 1, 25));
+            new AuditFilter(null, null, [], [], [], null), 1, 25));
 
         Assert.Equal(30, page1.Total);
         Assert.Equal(25, page1.Items.Count);
@@ -68,10 +68,48 @@ public class AuditQueryTests : IAsyncLifetime
 
         var handler = new GetAuditEventsQueryHandler(_db);
         var failed = await handler.HandleAsync(new GetAuditEventsQuery(
-            new AuditFilter(null, null, null, "SetSecretCommand", AuditStatus.Failed, null), 1, 25));
+            new AuditFilter(null, null, [], ["SetSecretCommand"], [AuditStatus.Failed], null), 1, 25));
 
         Assert.Single(failed.Items);
         Assert.Equal(AuditStatus.Failed, failed.Items[0].Status);
+    }
+
+    [Fact]
+    public async Task Filters_By_Multiple_CommandTypes_And_Statuses()
+    {
+        _db.AuditEvents.Add(Ev("SetSecretCommand", AuditStatus.Success, new DateTime(2026, 1, 1)));
+        _db.AuditEvents.Add(Ev("RevealSecretCommand", AuditStatus.Success, new DateTime(2026, 1, 2)));
+        _db.AuditEvents.Add(Ev("RotateTenantKeyCommand", AuditStatus.Failed, new DateTime(2026, 1, 3)));
+        _db.AuditEvents.Add(Ev("DeleteSecretCommand", AuditStatus.Success, new DateTime(2026, 1, 4)));
+        await _db.SaveChangesAsync();
+
+        var handler = new GetAuditEventsQueryHandler(_db);
+        // Two command types OR'd; and Success OR Failed (both) → matches all three of the named commands.
+        var res = await handler.HandleAsync(new GetAuditEventsQuery(
+            new AuditFilter(null, null, [],
+                ["SetSecretCommand", "RotateTenantKeyCommand"],
+                [AuditStatus.Success, AuditStatus.Failed], null), 1, 25));
+
+        Assert.Equal(2, res.Total);
+        Assert.Equal(new[] { "RotateTenantKeyCommand", "SetSecretCommand" }, res.Items.Select(i => i.CommandType).OrderBy(x => x));
+    }
+
+    [Fact]
+    public async Task Filters_By_Multiple_PrincipalIds()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var c = Guid.NewGuid();
+        _db.AuditEvents.Add(Ev("X", AuditStatus.Success, new DateTime(2026, 1, 1), principalId: a));
+        _db.AuditEvents.Add(Ev("Y", AuditStatus.Success, new DateTime(2026, 1, 2), principalId: b));
+        _db.AuditEvents.Add(Ev("Z", AuditStatus.Success, new DateTime(2026, 1, 3), principalId: c));
+        await _db.SaveChangesAsync();
+
+        var handler = new GetAuditEventsQueryHandler(_db);
+        var res = await handler.HandleAsync(new GetAuditEventsQuery(
+            new AuditFilter(null, null, [a, c], [], [], null), 1, 25));
+
+        Assert.Equal(2, res.Total);
     }
 
     [Fact]
@@ -90,7 +128,7 @@ public class AuditQueryTests : IAsyncLifetime
 
         var handler = new GetAuditEventsQueryHandler(_db);
         var res = await handler.HandleAsync(new GetAuditEventsQuery(
-            new AuditFilter(null, null, null, null, null, null), 1, 25));
+            new AuditFilter(null, null, [], [], [], null), 1, 25));
 
         Assert.Equal("dev@example.com", res.Items[0].ActorDisplay); // newest (A) = member
         Assert.Equal("ci-deployer", res.Items[1].ActorDisplay);     // (B) = service account
@@ -113,7 +151,7 @@ public class AuditQueryTests : IAsyncLifetime
         var ctx = new HttpExecutionContext { TenantId = _tenant, PrincipalId = Guid.NewGuid(), IpAddress = "127.0.0.1" };
         await Assert.ThrowsAsync<DeveloperPlatform.Application.Authorization.ForbiddenException>(() =>
             BuildDispatcher(ctx).SendAsync<GetAuditEventsQuery, PagedResult<AuditEventSummary>>(
-                new GetAuditEventsQuery(new AuditFilter(null, null, null, null, null, null), 1, 25)));
+                new GetAuditEventsQuery(new AuditFilter(null, null, [], [], [], null), 1, 25)));
     }
 
     [Fact]
@@ -126,7 +164,7 @@ public class AuditQueryTests : IAsyncLifetime
         var ctx = new HttpExecutionContext { TenantId = _tenant, PrincipalId = principal, ProjectId = project, IpAddress = "127.0.0.1" };
         await Assert.ThrowsAsync<DeveloperPlatform.Application.Authorization.ForbiddenException>(() =>
             BuildDispatcher(ctx).SendAsync<GetAuditEventsQuery, DeveloperPlatform.Application.Common.PagedResult<AuditEventSummary>>(
-                new GetAuditEventsQuery(new AuditFilter(null, null, null, null, null, null), 1, 25)));
+                new GetAuditEventsQuery(new AuditFilter(null, null, [], [], [], null), 1, 25)));
     }
 
     [Fact]
@@ -137,7 +175,7 @@ public class AuditQueryTests : IAsyncLifetime
         await _db.SaveChangesAsync();
         var ctx = new HttpExecutionContext { TenantId = _tenant, PrincipalId = principal, IpAddress = "127.0.0.1" };
         var res = await BuildDispatcher(ctx).SendAsync<GetAuditEventsQuery, PagedResult<AuditEventSummary>>(
-            new GetAuditEventsQuery(new AuditFilter(null, null, null, null, null, null), 1, 25));
+            new GetAuditEventsQuery(new AuditFilter(null, null, [], [], [], null), 1, 25));
         Assert.NotNull(res);
     }
 

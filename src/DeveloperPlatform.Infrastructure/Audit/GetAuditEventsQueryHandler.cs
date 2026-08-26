@@ -28,19 +28,19 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
             q = q.Where(e => e.OccurredAt <= to);
         }
 
-        if (f.PrincipalId is { } pid)
+        if (f.PrincipalIds.Count > 0)
         {
-            q = q.Where(e => e.PrincipalId == pid);
+            q = q.Where(e => e.PrincipalId != null && f.PrincipalIds.Contains(e.PrincipalId.Value));
         }
 
-        if (!string.IsNullOrWhiteSpace(f.CommandType))
+        if (f.CommandTypes.Count > 0)
         {
-            q = q.Where(e => e.CommandType == f.CommandType);
+            q = q.Where(e => f.CommandTypes.Contains(e.CommandType));
         }
 
-        if (f.Status is { } st)
+        if (f.Statuses.Count > 0)
         {
-            q = q.Where(e => e.Status == st);
+            q = q.Where(e => f.Statuses.Contains(e.Status));
         }
 
         if (f.CrossTenantOnly == true)

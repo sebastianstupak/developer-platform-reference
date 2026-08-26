@@ -306,19 +306,19 @@ public sealed class DeveloperPlatformApiClient
             parts.Add($"to={Uri.EscapeDataString(filter.To.Value.ToString("o"))}");
         }
 
-        if (filter.PrincipalId is not null)
+        foreach (var principalId in filter.PrincipalIds)
         {
-            parts.Add($"principalId={Uri.EscapeDataString(filter.PrincipalId.Value.ToString())}");
+            parts.Add($"principalId={Uri.EscapeDataString(principalId.ToString())}");
         }
 
-        if (filter.CommandType is not null)
+        foreach (var commandType in filter.CommandTypes)
         {
-            parts.Add($"commandType={Uri.EscapeDataString(filter.CommandType)}");
+            parts.Add($"commandType={Uri.EscapeDataString(commandType)}");
         }
 
-        if (filter.Status is not null)
+        foreach (var status in filter.Statuses)
         {
-            parts.Add($"status={Uri.EscapeDataString(filter.Status)}");
+            parts.Add($"status={Uri.EscapeDataString(status)}");
         }
 
         if (filter.CrossTenantOnly is not null)
