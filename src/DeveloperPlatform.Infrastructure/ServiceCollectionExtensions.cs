@@ -1,4 +1,3 @@
-using DeveloperPlatform.Application.ApiKeys.CreateApiKey;
 using DeveloperPlatform.Application.ApiKeys.GetApiKeys;
 using DeveloperPlatform.Application.ApiKeys.IssueApiKey;
 using DeveloperPlatform.Application.ApiKeys.RevokeApiKey;
@@ -58,9 +57,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrincipalResolver, PrincipalResolver>();
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
-
-        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
-        services.AddScoped<ICommandHandler<CreateApiKeyCommand, CreateApiKeyResult>, CreateApiKeyCommandHandler>();
 
         // Service-account + API-key handlers (Slice 4)
         services.AddScoped<ICommandHandler<CreateServiceAccountCommand, CreateServiceAccountResult>, CreateServiceAccountCommandHandler>();

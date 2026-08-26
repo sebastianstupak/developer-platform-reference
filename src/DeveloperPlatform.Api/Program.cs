@@ -116,7 +116,6 @@ try
     );
 
     app.MapHealth(versionSet);
-    app.MapCreateApiKey(versionSet);
     app.MapProjects(versionSet);
     app.MapPermissions(versionSet);
     app.MapServiceAccounts(versionSet);
