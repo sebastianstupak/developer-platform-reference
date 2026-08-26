@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Asp.Versioning.Builder;
+using DeveloperPlatform.Application.Audit.GetAuditEventDetail;
 using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Common;
 using DeveloperPlatform.Application.Queries;
@@ -31,6 +32,17 @@ public static class AuditEndpoints
                 result.Total, result.Page, result.PageSize));
         }).WithName("GetAuditEvents").Produces<AuditPageResponse>();
 
+        group.MapGet("/{id:guid}", async (Guid id, IQueryDispatcher d, CancellationToken ct) =>
+        {
+            var detail = await d.SendAsync<GetAuditEventDetailQuery, AuditEventDetail>(
+                new GetAuditEventDetailQuery(id), ct);
+            var s = detail.Summary;
+            return Results.Ok(new AuditDetailResponse(
+                new AuditEventResponse(s.Id, s.OccurredAt, s.CommandType, s.Status.ToString(), s.ActorDisplay,
+                    s.PrincipalType, s.IpAddress, s.IsCrossTenant, s.ProjectId, s.EnvironmentId),
+                detail.CrossTenantReason, detail.PayloadJson, detail.PayloadAvailable));
+        }).WithName("GetAuditEventDetail").Produces<AuditDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+
         return app;
     }
 
@@ -40,4 +52,7 @@ public static class AuditEndpoints
 
     public record AuditPageResponse(
         IReadOnlyList<AuditEventResponse> Items, int Total, int Page, int PageSize);
+
+    public record AuditDetailResponse(
+        AuditEventResponse Event, string? CrossTenantReason, string PayloadJson, bool PayloadAvailable);
 }

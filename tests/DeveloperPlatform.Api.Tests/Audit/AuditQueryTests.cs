@@ -20,6 +20,7 @@ public class AuditQueryTests : IAsyncLifetime
 {
     private ApplicationDbContext _db = null!;
     private readonly Guid _tenant = Guid.NewGuid();
+    private static readonly byte[] Key = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
 
     public async Task InitializeAsync()
     {
@@ -125,6 +126,50 @@ public class AuditQueryTests : IAsyncLifetime
         var res = await BuildDispatcher(ctx).SendAsync<GetAuditEventsQuery, PagedResult<AuditEventSummary>>(
             new GetAuditEventsQuery(new AuditFilter(null, null, null, null, null, null), 1, 25));
         Assert.NotNull(res);
+    }
+
+    [Fact]
+    public async Task Detail_Decrypts_Payload()
+    {
+        var crypto = new DeveloperPlatform.Infrastructure.Crypto.TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var (payload, keyId) = await crypto.EncryptAsync(_tenant, "{\"Name\":\"DATABASE_URL\"}");
+        var ev = AuditEvent.Create(_tenant, new DateTime(2026, 1, 1), "SetSecretCommand",
+            AuditStatus.Success, null, null, null, null, null, "127.0.0.1", false, null, payload, keyId);
+        _db.AuditEvents.Add(ev);
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Audit.GetAuditEventDetailQueryHandler(
+            _db, crypto, new TestExecutionContext { TenantId = _tenant });
+        var detail = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Audit.GetAuditEventDetail.GetAuditEventDetailQuery(ev.Id));
+
+        Assert.True(detail.PayloadAvailable);
+        Assert.Contains("DATABASE_URL", detail.PayloadJson);
+    }
+
+    [Fact]
+    public async Task Detail_Marks_Unavailable_When_Key_Shredded()
+    {
+        var crypto = new DeveloperPlatform.Infrastructure.Crypto.TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var (payload, keyId) = await crypto.EncryptAsync(_tenant, "{\"x\":1}");
+        var ev = AuditEvent.Create(_tenant, new DateTime(2026, 1, 1), "C", AuditStatus.Success,
+            null, null, null, null, null, "127.0.0.1", false, null, payload, keyId);
+        _db.AuditEvents.Add(ev);
+        await _db.SaveChangesAsync();
+        await crypto.ShredKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Audit.GetAuditEventDetailQueryHandler(
+            _db, crypto, new TestExecutionContext { TenantId = _tenant });
+        var detail = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Audit.GetAuditEventDetail.GetAuditEventDetailQuery(ev.Id));
+
+        Assert.False(detail.PayloadAvailable);
+        Assert.Equal("", detail.PayloadJson);
     }
 
     private sealed class TestExecutionContext : IExecutionContext
