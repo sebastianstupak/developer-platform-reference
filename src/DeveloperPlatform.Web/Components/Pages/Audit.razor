@@ -30,33 +30,33 @@
                                Variant="Variant.Outlined" Clearable="true" Style="min-width:180px;" />
                 <MudDatePicker Label="To" @bind-Date="_to" @bind-Date:after="ReloadAsync"
                                Variant="Variant.Outlined" Clearable="true" Style="min-width:180px;" />
-                <MudSelect T="Guid?" Label="Actor" @bind-Value="_actorId" @bind-Value:after="ReloadAsync"
-                           Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:220px;">
-                    @if (_members.Count > 0)
+                <div style="min-width:260px;">
+                    <MudAutocomplete T="ActorOption" Label="Actor" Variant="Variant.Outlined"
+                                     SearchFunc="SearchActors" ToStringFunc="@(a => a?.Label ?? string.Empty)"
+                                     Value="_actorPick" ValueChanged="OnActorSelected"
+                                     ResetValueOnEmptyText="true" CoerceText="false" Clearable="true"
+                                     Placeholder="Search members or service accounts" />
+                    @if (_selectedActors.Count > 0)
                     {
-                        <MudListSubheader>Members</MudListSubheader>
-                        @foreach (var m in _members)
-                        {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)m.PrincipalId)">@m.Email</MudSelectItem>
-                        }
+                        <div class="mt-2 d-flex flex-wrap gap-1">
+                            @foreach (var a in _selectedActors)
+                            {
+                                <MudChip T="ActorOption" Size="Size.Small" Value="a"
+                                         OnClose="@(() => RemoveActor(a))">@a.Label</MudChip>
+                            }
+                        </div>
                     }
-                    @if (_serviceAccounts.Count > 0)
-                    {
-                        <MudListSubheader>Service accounts</MudListSubheader>
-                        @foreach (var s in _serviceAccounts)
-                        {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)s.PrincipalId)">@s.Name</MudSelectItem>
-                        }
-                    }
-                </MudSelect>
-                <MudSelect T="string" Label="Action" @bind-Value="_action" @bind-Value:after="ReloadAsync"
+                </div>
+                <MudSelect T="string" Label="Action" MultiSelection="true"
+                           @bind-SelectedValues="_actions" @bind-SelectedValues:after="ReloadAsync"
                            Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:220px;">
                     @foreach (var c in _commandTypes)
                     {
                         <MudSelectItem T="string" Value="@c">@c</MudSelectItem>
                     }
                 </MudSelect>
-                <MudSelect T="string" Label="Status" @bind-Value="_status" @bind-Value:after="ReloadAsync"
+                <MudSelect T="string" Label="Status" MultiSelection="true"
+                           @bind-SelectedValues="_statuses" @bind-SelectedValues:after="ReloadAsync"
                            Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter" Style="min-width:160px;">
                     <MudSelectItem T="string" Value="@("Success")">Success</MudSelectItem>
                     <MudSelectItem T="string" Value="@("Failed")">Failed</MudSelectItem>
@@ -128,10 +128,14 @@
 
     private DateTime? _from;
     private DateTime? _to;
-    private Guid? _actorId;
-    private string? _action;
-    private string? _status;
+    private ActorOption? _actorPick;
+    private readonly List<ActorOption> _selectedActors = [];
+    private List<ActorOption> _allActors = [];
+    private IReadOnlyCollection<string> _actions = new HashSet<string>();
+    private IReadOnlyCollection<string> _statuses = new HashSet<string>();
     private bool _crossTenantOnly;
+
+    private sealed record ActorOption(Guid Id, string Label);
 
     protected override async Task OnInitializedAsync()
     {
@@ -144,7 +148,40 @@
         _serviceAccounts = await ApiClient.GetServiceAccountsAsync();
         _commandTypes = await ApiClient.GetAuditCommandTypesAsync();
 
+        _allActors = _members.Select(m => new ActorOption(m.PrincipalId, m.Email))
+            .Concat(_serviceAccounts.Select(s => new ActorOption(s.PrincipalId, s.Name)))
+            .ToList();
+
         _loading = false;
+    }
+
+    private Task<IEnumerable<ActorOption>> SearchActors(string value, CancellationToken ct)
+    {
+        var selected = _selectedActors.Select(a => a.Id).ToHashSet();
+        var matches = _allActors.Where(a => !selected.Contains(a.Id));
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            matches = matches.Where(a => a.Label.Contains(value, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult(matches.Take(50));
+    }
+
+    private async Task OnActorSelected(ActorOption? actor)
+    {
+        if (actor is not null && _selectedActors.All(a => a.Id != actor.Id))
+        {
+            _selectedActors.Add(actor);
+        }
+
+        _actorPick = null; // clear the field so it's ready for the next search
+        await ReloadAsync();
+    }
+
+    private async Task RemoveActor(ActorOption actor)
+    {
+        _selectedActors.RemoveAll(a => a.Id == actor.Id);
+        await ReloadAsync();
     }
 
     private async Task<GridData<AuditEventDto>> LoadServerData(GridState<AuditEventDto> state, CancellationToken ct)
@@ -152,9 +189,9 @@
         var filter = new AuditFilterDto(
             _from,
             _to?.Date.AddDays(1).AddTicks(-1),
-            _actorId,
-            _action,
-            _status,
+            _selectedActors.Select(a => a.Id).ToList(),
+            _actions.ToList(),
+            _statuses.ToList(),
             _crossTenantOnly ? true : null);
 
         var result = await ApiClient.GetAuditEventsAsync(filter, state.Page + 1, state.PageSize, ct);

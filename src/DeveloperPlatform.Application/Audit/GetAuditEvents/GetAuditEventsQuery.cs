@@ -14,9 +14,12 @@ public record GetAuditEventsQuery(AuditFilter Filter, int Page, int PageSize)
     public Scope ResourceScope => Scope.Tenant;
 }
 
+// Multi-value filters are OR within a field, AND across fields. An empty list means
+// "no constraint" for that field (the pre-multi-select default).
 public record AuditFilter(
-    DateTime? From, DateTime? To, Guid? PrincipalId, string? CommandType,
-    AuditStatus? Status, bool? CrossTenantOnly);
+    DateTime? From, DateTime? To,
+    IReadOnlyList<Guid> PrincipalIds, IReadOnlyList<string> CommandTypes,
+    IReadOnlyList<AuditStatus> Statuses, bool? CrossTenantOnly);
 
 public record AuditEventSummary(
     Guid Id, DateTime OccurredAt, string CommandType, AuditStatus Status,
