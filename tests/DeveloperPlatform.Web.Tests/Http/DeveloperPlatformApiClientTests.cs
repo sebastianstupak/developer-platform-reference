@@ -263,4 +263,134 @@ public sealed class DeveloperPlatformApiClientTests
 
         Assert.Equal(7, result);
     }
+
+    // --- Audit log (Slice B) ---
+
+    [Fact]
+    public async Task GetAuditEventsAsync_Deserializes_Items_And_Total_On_200()
+    {
+        var page = new
+        {
+            items = new[]
+            {
+                new
+                {
+                    id = Guid.NewGuid(),
+                    occurredAt = DateTime.UtcNow,
+                    commandType = "CreateProject",
+                    status = "Success",
+                    actorDisplay = "alice@example.com",
+                    principalType = "User",
+                    ipAddress = "127.0.0.1",
+                    isCrossTenant = false,
+                    projectId = (Guid?)null,
+                    environmentId = (Guid?)null,
+                },
+            },
+            total = 42,
+            page = 1,
+            pageSize = 20,
+        };
+        var handler = new MockHttpMessageHandler(
+            HttpStatusCode.OK, JsonSerializer.Serialize(page));
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        var filter = new AuditFilterDto(null, null, null, null, null, null);
+
+        var result = await client.GetAuditEventsAsync(filter, 1, 20);
+
+        Assert.Single(result.Items);
+        Assert.Equal(42, result.Total);
+        Assert.Equal("CreateProject", result.Items[0].CommandType);
+    }
+
+    [Fact]
+    public async Task GetAuditEventsAsync_Returns_Empty_Page_On_Failure()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.InternalServerError, string.Empty);
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        var filter = new AuditFilterDto(null, null, null, null, null, null);
+
+        var result = await client.GetAuditEventsAsync(filter, 1, 20);
+
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.Total);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(20, result.PageSize);
+    }
+
+    [Fact]
+    public async Task GetAuditEventDetailAsync_Returns_Detail_On_200()
+    {
+        var detail = new
+        {
+            @event = new
+            {
+                id = Guid.NewGuid(),
+                occurredAt = DateTime.UtcNow,
+                commandType = "DeleteSecret",
+                status = "Failure",
+                actorDisplay = (string?)null,
+                principalType = "ServiceAccount",
+                ipAddress = "10.0.0.5",
+                isCrossTenant = true,
+                projectId = Guid.NewGuid(),
+                environmentId = Guid.NewGuid(),
+            },
+            crossTenantReason = "support-access",
+            payloadJson = "{\"key\":\"value\"}",
+            payloadAvailable = true,
+        };
+        var handler = new MockHttpMessageHandler(
+            HttpStatusCode.OK, JsonSerializer.Serialize(detail));
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var result = await client.GetAuditEventDetailAsync(Guid.NewGuid());
+
+        Assert.NotNull(result);
+        Assert.Equal("DeleteSecret", result!.Event.CommandType);
+        Assert.Equal("support-access", result.CrossTenantReason);
+        Assert.True(result.PayloadAvailable);
+    }
+
+    [Fact]
+    public async Task GetAuditEventDetailAsync_Returns_Null_On_Failure()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.NotFound, string.Empty);
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var result = await client.GetAuditEventDetailAsync(Guid.NewGuid());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetAuditCommandTypesAsync_Returns_List_On_200()
+    {
+        var types = new[] { "CreateProject", "DeleteSecret" };
+        var handler = new MockHttpMessageHandler(
+            HttpStatusCode.OK, JsonSerializer.Serialize(types));
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var result = await client.GetAuditCommandTypesAsync();
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains("CreateProject", result);
+    }
+
+    [Fact]
+    public async Task GetAuditCommandTypesAsync_Returns_Empty_On_Failure()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.InternalServerError, string.Empty);
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var result = await client.GetAuditCommandTypesAsync();
+
+        Assert.Empty(result);
+    }
 }

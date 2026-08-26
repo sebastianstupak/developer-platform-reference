@@ -274,4 +274,76 @@ public sealed class DeveloperPlatformApiClient
         var body = await response.Content.ReadFromJsonAsync<RotateKeyDto>(ct);
         return body!.SecretsReEncrypted;
     }
+
+    // --- Audit log (Slice B) ---
+
+    public async Task<AuditPageDto> GetAuditEventsAsync(
+        AuditFilterDto filter, int page, int pageSize, CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await _http.GetFromJsonAsync<AuditPageDto>(
+                $"/api/v1/audit{BuildAuditQuery(filter, page, pageSize)}", ct);
+            return result ?? new AuditPageDto([], 0, page, pageSize);
+        }
+        catch
+        {
+            return new AuditPageDto([], 0, page, pageSize);
+        }
+    }
+
+    private static string BuildAuditQuery(AuditFilterDto filter, int page, int pageSize)
+    {
+        var parts = new List<string>();
+
+        if (filter.From is not null)
+        {
+            parts.Add($"from={Uri.EscapeDataString(filter.From.Value.ToString("o"))}");
+        }
+
+        if (filter.To is not null)
+        {
+            parts.Add($"to={Uri.EscapeDataString(filter.To.Value.ToString("o"))}");
+        }
+
+        if (filter.PrincipalId is not null)
+        {
+            parts.Add($"principalId={Uri.EscapeDataString(filter.PrincipalId.Value.ToString())}");
+        }
+
+        if (filter.CommandType is not null)
+        {
+            parts.Add($"commandType={Uri.EscapeDataString(filter.CommandType)}");
+        }
+
+        if (filter.Status is not null)
+        {
+            parts.Add($"status={Uri.EscapeDataString(filter.Status)}");
+        }
+
+        if (filter.CrossTenantOnly is not null)
+        {
+            parts.Add($"crossTenantOnly={Uri.EscapeDataString(filter.CrossTenantOnly.Value.ToString())}");
+        }
+
+        parts.Add($"page={page}");
+        parts.Add($"pageSize={pageSize}");
+
+        return "?" + string.Join("&", parts);
+    }
+
+    public async Task<AuditDetailDto?> GetAuditEventDetailAsync(Guid id, CancellationToken ct = default)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<AuditDetailDto>($"/api/v1/audit/{id}", ct);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Task<IReadOnlyList<string>> GetAuditCommandTypesAsync(CancellationToken ct = default)
+        => GetListAsync<string>("/api/v1/audit/command-types", ct);
 }
