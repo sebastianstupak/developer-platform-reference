@@ -29,13 +29,21 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
             executionContext.EnvironmentId = envId;
         }
 
-        var resolver = httpContext.RequestServices.GetRequiredService<IPrincipalResolver>();
-        var resolved = await resolver.ResolveAsync(httpContext.User, tenantId, httpContext.RequestAborted);
-        if (resolved is not null)
+        if (Guid.TryParse(httpContext.User.FindFirst("principal_id")?.Value, out var machinePrincipalId))
         {
-            executionContext.PrincipalId = resolved.PrincipalId;
-            executionContext.PrincipalType = resolved.Type;
-            executionContext.UserId = resolved.UserId;
+            executionContext.PrincipalId = machinePrincipalId;
+            executionContext.PrincipalType = DeveloperPlatform.Domain.Authorization.PrincipalType.ServiceAccount;
+        }
+        else
+        {
+            var resolver = httpContext.RequestServices.GetRequiredService<IPrincipalResolver>();
+            var resolved = await resolver.ResolveAsync(httpContext.User, tenantId, httpContext.RequestAborted);
+            if (resolved is not null)
+            {
+                executionContext.PrincipalId = resolved.PrincipalId;
+                executionContext.PrincipalType = resolved.Type;
+                executionContext.UserId = resolved.UserId;
+            }
         }
 
         await next(httpContext);

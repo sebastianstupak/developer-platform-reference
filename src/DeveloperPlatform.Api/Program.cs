@@ -56,7 +56,17 @@ try
         options.GroupNameFormat = "'v'V";
         options.SubstituteApiVersionInUrl = true;
     });
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    builder.Services.AddAuthentication("Smart")
+        .AddPolicyScheme("Smart", "JWT or API key", options =>
+        {
+            options.ForwardDefaultSelector = ctx =>
+            {
+                var auth = ctx.Request.Headers.Authorization.ToString();
+                return auth.StartsWith("Bearer " + DeveloperPlatform.Infrastructure.Authorization.ApiKeyAuthenticationHandler.KeyPrefixMarker, StringComparison.Ordinal)
+                    ? DeveloperPlatform.Infrastructure.Authorization.ApiKeyAuthenticationHandler.SchemeName
+                    : JwtBearerDefaults.AuthenticationScheme;
+            };
+        })
         .AddJwtBearer(options =>
         {
             options.Authority = builder.Configuration["Keycloak:Authority"];
@@ -67,7 +77,10 @@ try
                 NameClaimType = "preferred_username",
                 RoleClaimType = "realm_access.roles"
             };
-        });
+        })
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+                   DeveloperPlatform.Infrastructure.Authorization.ApiKeyAuthenticationHandler>(
+            DeveloperPlatform.Infrastructure.Authorization.ApiKeyAuthenticationHandler.SchemeName, _ => { });
     builder.Services.AddAuthorization();
     builder.Services.AddProblemDetails();
     builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.ForbiddenExceptionHandler>();
