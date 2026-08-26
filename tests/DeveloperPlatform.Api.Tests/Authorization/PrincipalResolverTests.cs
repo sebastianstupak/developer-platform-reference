@@ -21,7 +21,10 @@ public class PrincipalResolverTests : IAsyncLifetime
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         _db = new ApplicationDbContext(options, ctx, TenancyMode.SharedTables);
         await _db.Database.EnsureCreatedAsync();
-        _sut = new PrincipalResolver(_db);
+        _sut = new PrincipalResolver(
+            _db,
+            new DeveloperPlatform.Infrastructure.Crypto.TenantCryptoService(
+                _db, System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
     }
 
     public Task DisposeAsync() => _db.DisposeAsync().AsTask();
@@ -51,18 +54,38 @@ public class PrincipalResolverTests : IAsyncLifetime
             .SingleOrDefaultAsync(a => a.PrincipalId == result.PrincipalId && a.RoleId == SystemRoles.OwnerId);
         Assert.NotNull(owner);
         Assert.Equal(ScopeType.Tenant, owner!.ScopeType);
+        Assert.True(await _db.TenantEncryptionKeys.AnyAsync());
     }
 
     [Fact]
-    public async Task Second_Member_Gets_No_Role()
+    public async Task Second_Member_Without_Invitation_Gets_No_Membership()
     {
-        await _sut.ResolveAsync(WithSubject("kc-first"), _tenant);
+        await _sut.ResolveAsync(WithSubject("kc-first"), _tenant);       // first → Owner
         var second = await _sut.ResolveAsync(WithSubject("kc-second"), _tenant);
+        Assert.Null(second);                                             // no invite → not a member
+    }
 
-        Assert.NotNull(second);
-        var assignments = await _db.RoleAssignments.AsNoTracking()
-            .Where(a => a.PrincipalId == second!.PrincipalId).ToListAsync();
-        Assert.Empty(assignments);
+    [Fact]
+    public async Task Invited_User_Gets_Invited_Role_And_Invitation_Accepted()
+    {
+        await _sut.ResolveAsync(WithSubject("kc-first"), _tenant);       // establish tenant (Owner)
+        var roleId = DeveloperPlatform.Infrastructure.Authorization.SystemRoles.ViewerId;
+        _db.Invitations.Add(DeveloperPlatform.Domain.Authorization.Invitation.Create(
+            _tenant, "invitee@example.com", roleId,
+            DeveloperPlatform.Domain.Authorization.Scope.Tenant, "tok", DateTime.UtcNow.AddDays(1)));
+        await _db.SaveChangesAsync();
+
+        var claims = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
+        {
+            new System.Security.Claims.Claim("sub", "kc-invitee"),
+            new System.Security.Claims.Claim("email", "invitee@example.com"),
+        }));
+        var resolved = await _sut.ResolveAsync(claims, _tenant);
+
+        Assert.NotNull(resolved);
+        Assert.True(await _db.RoleAssignments.AnyAsync(a => a.PrincipalId == resolved!.PrincipalId && a.RoleId == roleId));
+        Assert.True(await _db.Invitations.AnyAsync(i =>
+            i.Email == "invitee@example.com" && i.Status == DeveloperPlatform.Domain.Authorization.InvitationStatus.Accepted));
     }
 
     [Fact]
