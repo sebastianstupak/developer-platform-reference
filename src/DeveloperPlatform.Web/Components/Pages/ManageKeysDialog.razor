@@ -1,28 +1,39 @@
 @inject DeveloperPlatformApiClient ApiClient
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">API keys &mdash; @ServiceAccountName</MudText>
     </TitleContent>
     <DialogContent>
-        <MudStack Spacing="4" Style="min-width:520px;">
+        <MudStack Spacing="4" Style="width:min(560px, 92vw);">
             @if (_issuedKey is not null)
             {
-                <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" NoIcon="false">
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="border-color:var(--mud-palette-success);">
                     <MudStack Spacing="2">
-                        <MudText Typo="Typo.body2">Copy this key now — it won't be shown again.</MudText>
-                        <MudTextField Value="_issuedKey" ReadOnly="true" Variant="Variant.Outlined"
-                                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.ContentCopy"
-                                      OnAdornmentClick="CopyIssuedKey" Typo="Typo.body2" />
-                        <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="@(() => _issuedKey = null)">Done</MudButton>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Copy this key now — it won't be shown again.</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudTextField Value="_issuedKey" ReadOnly="true" Variant="Variant.Outlined"
+                                          Margin="Margin.Dense" FullWidth="true"
+                                          Style="font-family:monospace;" />
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Outlined.ContentCopy" OnClick="CopyIssuedKey">
+                                Copy
+                            </MudButton>
+                        </MudStack>
+                        <MudButton Size="Size.Small" Variant="Variant.Text" Class="align-self-start"
+                                   OnClick="@(() => _issuedKey = null)">Dismiss</MudButton>
                     </MudStack>
-                </MudAlert>
+                </MudPaper>
             }
 
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                 <MudTextField @bind-Value="_newKeyName" Label="Key name" Variant="Variant.Outlined"
-                              Immediate="true" Class="flex-grow-1" />
+                              Margin="Margin.Dense" Immediate="true" Class="flex-grow-1" />
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add"
                            Disabled="@(string.IsNullOrWhiteSpace(_newKeyName) || _issuing)" OnClick="IssueKeyAsync">
                     Issue key
@@ -123,7 +134,23 @@
         }
     }
 
-    private void CopyIssuedKey() => Snackbar.Add("Select the key text and copy it.", Severity.Info);
+    private async Task CopyIssuedKey()
+    {
+        if (_issuedKey is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _issuedKey);
+            Snackbar.Add("Key copied to clipboard.", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Couldn't copy automatically — select the text and copy it.", Severity.Info);
+        }
+    }
 
     private void Close() => MudDialog.Close();
 }

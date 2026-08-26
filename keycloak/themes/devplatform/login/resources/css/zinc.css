@@ -1,0 +1,142 @@
+/* Developer Platform — zinc login theme, matching the MudBlazor app.
+   Palette: bg #fafafa, surface #fff, primary #18181b, text #18181b/#71717a,
+   lines #e4e4e7/#d4d4d8, radius 8px, Inter. Targets PatternFly v4 (.pf-c-*) and v5 (.pf-v5-c-*). */
+
+:root {
+    --pf-global--primary-color--100: #18181b;
+    --pf-v5-global--primary-color--100: #18181b;
+    --pf-global--link--Color: #18181b;
+    --pf-v5-global--link--Color: #18181b;
+    --pf-global--BorderRadius--sm: 8px;
+    --pf-v5-global--BorderRadius--sm: 8px;
+}
+
+html,
+body,
+body.login-pf,
+.login-pf body {
+    background: #fafafa !important;
+    background-image: none !important;
+    color: #18181b;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.login-pf-page {
+    background: transparent;
+    padding-top: 40px;
+}
+
+/* Header: light, quiet, sentence-cased — not the default dark textured banner */
+#kc-header,
+#kc-header-wrapper {
+    background: transparent !important;
+    color: #18181b !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    text-transform: none;
+    padding: 8px 0 16px;
+    white-space: normal;
+}
+
+.login-pf-page .login-pf-header h1,
+#kc-page-title {
+    color: #18181b;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Card */
+.card-pf,
+.pf-c-card,
+.pf-v5-c-card {
+    border: 1px solid #e4e4e7 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05) !important;
+    background: #ffffff !important;
+}
+
+/* Labels */
+label,
+.pf-c-form__label,
+.pf-v5-c-form__label {
+    color: #18181b !important;
+    font-weight: 500 !important;
+}
+
+/* Inputs — exclude the submit button, which also lives inside #kc-form-login.
+   `#kc-form-login input` (0,1,0,1) would otherwise outrank `#kc-login` (0,1,0,0)
+   and paint the primary button white. */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+.pf-c-form-control,
+.pf-v5-c-form-control,
+#kc-form-login input:not([type="submit"]) {
+    border: 1px solid #d4d4d8 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #18181b !important;
+    height: 40px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+.pf-c-form-control:focus,
+.pf-v5-c-form-control:focus,
+#kc-form-login input:not([type="submit"]):focus {
+    border-color: #18181b !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px #18181b !important;
+}
+
+/* Primary button — `#kc-form-buttons input[type="submit"]` (0,1,0,1) and
+   `#kc-form-buttons #kc-login` (0,2,0,0) outrank every competing rule. */
+input[type="submit"],
+button[type="submit"],
+#kc-login,
+#kc-form-buttons input[type="submit"],
+#kc-form-buttons #kc-login,
+.pf-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary,
+.btn-primary {
+    background: #18181b !important;
+    background-image: none !important;
+    color: #fafafa !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    height: 40px;
+    box-shadow: none !important;
+}
+
+input[type="submit"]:hover,
+button[type="submit"]:hover,
+#kc-login:hover,
+#kc-form-buttons input[type="submit"]:hover,
+#kc-form-buttons #kc-login:hover,
+.pf-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:hover,
+.btn-primary:hover {
+    background: #27272a !important;
+}
+
+/* Links */
+a,
+a:visited {
+    color: #18181b !important;
+}
+
+a:hover {
+    color: #3f3f46 !important;
+}
+
+/* Alerts / messages */
+.pf-c-alert,
+.pf-v5-c-alert,
+.alert {
+    border-radius: 8px !important;
+}

@@ -1,6 +1,7 @@
 {
     "realm":  "developer-platform",
     "enabled":  true,
+    "loginTheme":  "devplatform",
     "registrationAllowed":  false,
     "loginWithEmailAllowed":  true,
     "accessTokenLifespan":  300,
