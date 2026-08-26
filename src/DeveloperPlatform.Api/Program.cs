@@ -3,6 +3,7 @@ using DeveloperPlatform.Api.Endpoints.ApiKeys;
 using DeveloperPlatform.Api.Endpoints.Projects;
 using DeveloperPlatform.Api.Endpoints.Permissions;
 using DeveloperPlatform.Api.Endpoints.Health;
+using DeveloperPlatform.Api.Endpoints.ServiceAccounts;
 using DeveloperPlatform.Api.OpenApi;
 using DeveloperPlatform.Infrastructure;
 using DeveloperPlatform.Infrastructure.Context;
@@ -118,6 +119,8 @@ try
     app.MapCreateApiKey(versionSet);
     app.MapProjects(versionSet);
     app.MapPermissions(versionSet);
+    app.MapServiceAccounts(versionSet);
+    app.MapApiKeys(versionSet);
 
     app.Run();
 }
