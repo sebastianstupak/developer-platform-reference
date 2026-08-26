@@ -100,6 +100,12 @@ public sealed class CommandDispatcher(
     {
         try
         {
+            // Discard the failed handler's tracked (Modified/Added) entity changes so the
+            // rollback below only removes what the transaction rollback already undid in the
+            // database — SaveChangesAsync must flush ONLY the freshly-built audit entry, never
+            // the failed handler's still-tracked mutations.
+            db.ChangeTracker.Clear();
+
             await using var failTx = await db.Database.BeginTransactionAsync(CancellationToken.None);
             var entry = await BuildOutboxEntryAsync<TCommand, TResult>(command, AuditStatus.Failed, crossTenant, CancellationToken.None);
             await auditOutboxRepository.AddAsync(entry, CancellationToken.None);
