@@ -13,6 +13,7 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
         builder.Property(m => m.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.HasIndex(m => m.TenantId);
         builder.HasIndex(m => m.PrincipalId).IsUnique();
+        builder.HasIndex(m => new { m.TenantId, m.UserId }).IsUnique();
 
         builder.HasOne<Principal>().WithOne().HasForeignKey<Membership>(m => m.PrincipalId)
             .OnDelete(DeleteBehavior.Cascade);
