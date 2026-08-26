@@ -10,7 +10,10 @@ using DeveloperPlatform.Application.Grants.GetRoles;
 using DeveloperPlatform.Application.Grants.GrantPermission;
 using DeveloperPlatform.Application.Grants.RevokePermissionGrant;
 using DeveloperPlatform.Application.Grants.RevokeRoleAssignment;
+using DeveloperPlatform.Application.Members.GetInvitations;
 using DeveloperPlatform.Application.Members.GetMembers;
+using DeveloperPlatform.Application.Members.InviteMember;
+using DeveloperPlatform.Application.Members.RevokeInvitation;
 using DeveloperPlatform.Application.Projects.CreateProject;
 using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
@@ -91,6 +94,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<GetRolesQuery, IReadOnlyList<RoleSummary>>, GetRolesQueryHandler>();
         services.AddScoped<IQueryHandler<GetMembersQuery, IReadOnlyList<MemberSummary>>, GetMembersQueryHandler>();
         services.AddScoped<IPrivilegeGuard, PrivilegeGuard>();
+
+        // Member invitations (Slice 5)
+        services.AddScoped<ICommandHandler<InviteMemberCommand, InviteMemberResult>, InviteMemberCommandHandler>();
+        services.AddScoped<ICommandHandler<RevokeInvitationCommand, Unit>, RevokeInvitationCommandHandler>();
+        services.AddScoped<IQueryHandler<GetInvitationsQuery, IReadOnlyList<InvitationSummary>>, GetInvitationsQueryHandler>();
 
         // RabbitMQ publisher as singleton — InitializeAsync called synchronously at startup
         var publisher = new RabbitMqPublisher();
