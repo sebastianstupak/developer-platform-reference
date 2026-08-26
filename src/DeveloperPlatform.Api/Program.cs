@@ -86,6 +86,8 @@ try
             DeveloperPlatform.Infrastructure.Authorization.ApiKeyAuthenticationHandler.SchemeName, _ => { });
     builder.Services.AddAuthorization();
     builder.Services.AddProblemDetails();
+    builder.Services.ConfigureHttpJsonOptions(options =>
+        options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
     builder.Services.AddExceptionHandler<DeveloperPlatform.Infrastructure.Authorization.ForbiddenExceptionHandler>();
     builder.Services.AddInfrastructure(builder.Configuration);
 
