@@ -3,6 +3,7 @@
 @inject DeveloperPlatformApiClient ApiClient
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
 @inject PersistentComponentState ApplicationState
 @inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
 
@@ -34,7 +35,9 @@
     {
         <MudDataGrid T="ProjectDto" Items="_projects"
                      Bordered="false" Striped="false" Hover="true" Elevation="0"
-                     Dense="true">
+                     Dense="true"
+                     RowStyle="cursor:pointer;"
+                     RowClick="@(args => Navigation.NavigateTo($"/projects/{args.Item.Id}"))">
             <Columns>
                 <PropertyColumn Property="p => p.Name" Title="Name" />
                 <PropertyColumn Property="p => p.Description" Title="Description" />
@@ -47,11 +50,13 @@
                 </TemplateColumn>
                 <TemplateColumn Title="" CellStyle="text-align:right;width:56px;">
                     <CellTemplate>
-                        <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
-                                       Size="Size.Small"
-                                       Color="Color.Default"
-                                       aria-label="Delete project"
-                                       OnClick="@(() => DeleteProjectAsync(context.Item.Id))" />
+                        <div @onclick:stopPropagation="true">
+                            <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           aria-label="Delete project"
+                                           OnClick="@(() => DeleteProjectAsync(context.Item.Id))" />
+                        </div>
                     </CellTemplate>
                 </TemplateColumn>
             </Columns>
