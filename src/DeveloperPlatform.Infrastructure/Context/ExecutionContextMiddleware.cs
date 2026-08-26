@@ -1,4 +1,5 @@
 using DeveloperPlatform.Application.Authorization;
+using DeveloperPlatform.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,7 +30,8 @@ public sealed class ExecutionContextMiddleware(RequestDelegate next)
             executionContext.EnvironmentId = envId;
         }
 
-        if (Guid.TryParse(httpContext.User.FindFirst("principal_id")?.Value, out var machinePrincipalId))
+        var isApiKeyCaller = httpContext.User.Identities.Any(i => i.AuthenticationType == ApiKeyAuthenticationHandler.SchemeName);
+        if (isApiKeyCaller && Guid.TryParse(httpContext.User.FindFirst("principal_id")?.Value, out var machinePrincipalId))
         {
             executionContext.PrincipalId = machinePrincipalId;
             executionContext.PrincipalType = DeveloperPlatform.Domain.Authorization.PrincipalType.ServiceAccount;
