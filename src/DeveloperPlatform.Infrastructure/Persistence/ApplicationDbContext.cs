@@ -22,7 +22,6 @@ public class ApplicationDbContext(
     public DbSet<TenantEncryptionKey> TenantEncryptionKeys => Set<TenantEncryptionKey>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectEnvironment> ProjectEnvironments => Set<ProjectEnvironment>();
-    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<Secret> Secrets => Set<Secret>();
     public DbSet<AuditOutboxEntry> AuditOutboxEntries => Set<AuditOutboxEntry>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
@@ -35,6 +34,7 @@ public class ApplicationDbContext(
     public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
     public DbSet<PermissionGrant> PermissionGrants => Set<PermissionGrant>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<ApiKeyCredential> ApiKeyCredentials => Set<ApiKeyCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

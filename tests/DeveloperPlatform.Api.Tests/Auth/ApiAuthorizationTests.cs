@@ -33,8 +33,8 @@ public sealed class ApiAuthorizationTests : IClassFixture<ApiAuthorizationTests.
         var client = _factory.CreateClient(
             new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         var response = await client.PostAsJsonAsync(
-            "/api/v1/projects/00000000-0000-0000-0000-000000000001/api-keys",
-            new { Name = "test", Scopes = 1 });
+            "/api/v1/service-accounts",
+            new { name = "x" });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
