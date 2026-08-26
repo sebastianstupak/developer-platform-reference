@@ -1,0 +1,52 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Delete environment</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Style="width:min(480px, 92vw);">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+                This will permanently delete <strong>@EnvironmentName</strong> and all secrets stored in it.
+                This action cannot be undone.
+            </MudAlert>
+            <MudText Typo="Typo.body2">
+                Type <strong>@EnvironmentName</strong> to confirm.
+            </MudText>
+            <MudTextField @bind-Value="_confirmation"
+                          Label="Environment name"
+                          Variant="Variant.Outlined"
+                          Placeholder="@EnvironmentName"
+                          Immediate="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Error"
+                   Disabled="@(_confirmation != EnvironmentName)">
+            Delete
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string EnvironmentName { get; set; } = string.Empty;
+
+    private string _confirmation = string.Empty;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (_confirmation != EnvironmentName)
+        {
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}
