@@ -50,8 +50,13 @@ public sealed class PrincipalResolver(ApplicationDbContext db, ITenantCryptoServ
         }
 
         // Otherwise require a matching pending invitation (invitation-gated onboarding).
-        var invitation = await db.Invitations.FirstOrDefaultAsync(
-            i => i.Email == dbUser.Email && i.Status == InvitationStatus.Pending && i.ExpiresAt > DateTime.UtcNow, ct);
+        // Only honour an email-matched invitation when the IdP asserts the email is verified.
+        var emailVerified = string.Equals(
+            user.FindFirst("email_verified")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+        var invitation = emailVerified
+            ? await db.Invitations.FirstOrDefaultAsync(
+                i => i.Email == dbUser.Email && i.Status == InvitationStatus.Pending && i.ExpiresAt > DateTime.UtcNow, ct)
+            : null;
         if (invitation is null)
         {
             return null;   // not a member, no invitation → 403 downstream

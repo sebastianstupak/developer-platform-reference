@@ -79,6 +79,7 @@ public class PrincipalResolverTests : IAsyncLifetime
         {
             new System.Security.Claims.Claim("sub", "kc-invitee"),
             new System.Security.Claims.Claim("email", "invitee@example.com"),
+            new System.Security.Claims.Claim("email_verified", "true"),
         }));
         var resolved = await _sut.ResolveAsync(claims, _tenant);
 
@@ -86,6 +87,25 @@ public class PrincipalResolverTests : IAsyncLifetime
         Assert.True(await _db.RoleAssignments.AnyAsync(a => a.PrincipalId == resolved!.PrincipalId && a.RoleId == roleId));
         Assert.True(await _db.Invitations.AnyAsync(i =>
             i.Email == "invitee@example.com" && i.Status == DeveloperPlatform.Domain.Authorization.InvitationStatus.Accepted));
+    }
+
+    [Fact]
+    public async Task Invited_User_Without_Verified_Email_Is_Not_Onboarded()
+    {
+        await _sut.ResolveAsync(WithSubject("kc-first"), _tenant);   // establish tenant/Owner
+        var roleId = DeveloperPlatform.Infrastructure.Authorization.SystemRoles.ViewerId;
+        _db.Invitations.Add(DeveloperPlatform.Domain.Authorization.Invitation.Create(
+            _tenant, "invitee@example.com", roleId,
+            DeveloperPlatform.Domain.Authorization.Scope.Tenant, "tok", DateTime.UtcNow.AddDays(1)));
+        await _db.SaveChangesAsync();
+
+        var claims = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
+        {
+            new System.Security.Claims.Claim("sub", "kc-invitee2"),
+            new System.Security.Claims.Claim("email", "invitee@example.com"),
+            // no email_verified claim
+        }));
+        Assert.Null(await _sut.ResolveAsync(claims, _tenant));   // unverified email → not onboarded
     }
 
     [Fact]
