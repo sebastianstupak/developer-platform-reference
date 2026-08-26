@@ -1,4 +1,5 @@
 using DeveloperPlatform.Application.Attributes;
+using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Common;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Domain.Audit;
@@ -8,7 +9,10 @@ namespace DeveloperPlatform.Application.Audit.GetAuditEvents;
 
 [RequiresPermission(Permission.AuditRead)]
 public record GetAuditEventsQuery(AuditFilter Filter, int Page, int PageSize)
-    : IQuery<PagedResult<AuditEventSummary>>;
+    : IQuery<PagedResult<AuditEventSummary>>, IResourceScoped
+{
+    public Scope ResourceScope => Scope.Tenant;
+}
 
 public record AuditFilter(
     DateTime? From, DateTime? To, Guid? PrincipalId, string? CommandType,

@@ -50,7 +50,12 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
 
         var total = await q.CountAsync(ct);
         var rows = await q.OrderByDescending(e => e.OccurredAt)
-            .Skip((page - 1) * size).Take(size).ToListAsync(ct);
+            .Skip((page - 1) * size).Take(size)
+            .Select(e => new AuditEventRow(
+                e.Id, e.OccurredAt, e.CommandType, e.Status,
+                e.PrincipalId, e.PrincipalType, e.UserId, e.IpAddress, e.IsCrossTenant,
+                e.ProjectId, e.EnvironmentId))
+            .ToListAsync(ct);
 
         var userIds = rows.Where(r => r.UserId is not null).Select(r => r.UserId!.Value).Distinct().ToList();
         var principalIds = rows.Where(r => r.PrincipalId is not null).Select(r => r.PrincipalId!.Value).Distinct().ToList();
@@ -61,25 +66,31 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
 
         var items = rows.Select(r => new AuditEventSummary(
             r.Id, r.OccurredAt, r.CommandType, r.Status,
-            ResolveActor(r, users, sas), r.PrincipalType, r.IpAddress, r.IsCrossTenant,
+            ResolveActor(r.PrincipalType, r.UserId, r.PrincipalId, users, sas), r.PrincipalType, r.IpAddress, r.IsCrossTenant,
             r.ProjectId, r.EnvironmentId)).ToList();
 
         return new PagedResult<AuditEventSummary>(items, total, page, size);
     }
 
+    private sealed record AuditEventRow(
+        Guid Id, DateTime OccurredAt, string CommandType, AuditStatus Status,
+        Guid? PrincipalId, string? PrincipalType, Guid? UserId, string IpAddress, bool IsCrossTenant,
+        Guid? ProjectId, Guid? EnvironmentId);
+
     internal static string? ResolveActor(
-        AuditEvent e, IReadOnlyDictionary<Guid, string> users, IReadOnlyDictionary<Guid, string> sas)
+        string? principalType, Guid? userId, Guid? principalId,
+        IReadOnlyDictionary<Guid, string> users, IReadOnlyDictionary<Guid, string> sas)
     {
-        if (e.PrincipalType == "Member" && e.UserId is { } uid && users.TryGetValue(uid, out var email))
+        if (principalType == "Member" && userId is { } uid && users.TryGetValue(uid, out var email))
         {
             return email;
         }
 
-        if (e.PrincipalType == "ServiceAccount" && e.PrincipalId is { } pid && sas.TryGetValue(pid, out var name))
+        if (principalType == "ServiceAccount" && principalId is { } pid && sas.TryGetValue(pid, out var name))
         {
             return name;
         }
 
-        return e.PrincipalId?.ToString();
+        return principalId?.ToString();
     }
 }

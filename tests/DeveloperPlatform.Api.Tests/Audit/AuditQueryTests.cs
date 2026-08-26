@@ -117,6 +117,19 @@ public class AuditQueryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task List_Forbidden_When_Only_Project_Scoped_Grant()
+    {
+        var principal = Guid.NewGuid();
+        var project = Guid.NewGuid();
+        _db.PermissionGrants.Add(PermissionGrant.Create(_tenant, principal, Permission.AuditRead, Scope.Project(project)));
+        await _db.SaveChangesAsync();
+        var ctx = new HttpExecutionContext { TenantId = _tenant, PrincipalId = principal, ProjectId = project, IpAddress = "127.0.0.1" };
+        await Assert.ThrowsAsync<DeveloperPlatform.Application.Authorization.ForbiddenException>(() =>
+            BuildDispatcher(ctx).SendAsync<GetAuditEventsQuery, DeveloperPlatform.Application.Common.PagedResult<AuditEventSummary>>(
+                new GetAuditEventsQuery(new AuditFilter(null, null, null, null, null, null), 1, 25)));
+    }
+
+    [Fact]
     public async Task List_Allowed_With_AuditRead_Grant()
     {
         var principal = Guid.NewGuid();

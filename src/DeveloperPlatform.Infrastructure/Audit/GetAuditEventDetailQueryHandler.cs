@@ -26,7 +26,7 @@ public sealed class GetAuditEventDetailQueryHandler(
 
         var summary = new AuditEventSummary(
             e.Id, e.OccurredAt, e.CommandType, e.Status,
-            GetAuditEventsQueryHandler.ResolveActor(e, users, sas), e.PrincipalType, e.IpAddress,
+            GetAuditEventsQueryHandler.ResolveActor(e.PrincipalType, e.UserId, e.PrincipalId, users, sas), e.PrincipalType, e.IpAddress,
             e.IsCrossTenant, e.ProjectId, e.EnvironmentId);
 
         string payloadJson = "";
