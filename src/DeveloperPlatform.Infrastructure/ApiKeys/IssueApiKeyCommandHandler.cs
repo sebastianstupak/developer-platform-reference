@@ -5,6 +5,7 @@ using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Context;
 using DeveloperPlatform.Domain.ApiKeys;
 using DeveloperPlatform.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeveloperPlatform.Infrastructure.ApiKeys;
 
@@ -14,6 +15,13 @@ public sealed class IssueApiKeyCommandHandler(
 {
     public async Task<IssueApiKeyResult> HandleAsync(IssueApiKeyCommand command, CancellationToken ct = default)
     {
+        var isServiceAccount = await db.ServiceAccounts
+            .AnyAsync(s => s.PrincipalId == command.ServiceAccountId, ct);
+        if (!isServiceAccount)
+        {
+            throw new KeyNotFoundException($"Service account {command.ServiceAccountId} not found.");
+        }
+
         var rawBytes = RandomNumberGenerator.GetBytes(32);
         var plaintextKey = "dpk_" + Convert.ToBase64String(rawBytes)
             .Replace('+', '-').Replace('/', '_').TrimEnd('=');

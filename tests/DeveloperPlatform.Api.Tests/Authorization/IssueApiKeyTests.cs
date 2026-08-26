@@ -46,6 +46,14 @@ public class IssueApiKeyTests : IAsyncLifetime
         Assert.Equal(64, cred.KeyHash.Length);                       // SHA-256 hex
     }
 
+    [Fact]
+    public async Task Issue_Rejects_Target_That_Is_Not_A_ServiceAccount()
+    {
+        var handler = new IssueApiKeyCommandHandler(_db, new TestExecutionContext { TenantId = _tenant });
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => handler.HandleAsync(new IssueApiKeyCommand(Guid.NewGuid(), "x", null)));
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
