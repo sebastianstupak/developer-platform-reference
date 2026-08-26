@@ -69,6 +69,18 @@ public class SecretTests : IAsyncLifetime
         Assert.Equal("second", await crypto.DecryptAsync(_tenant, stored.EncryptedValue, stored.KeyId));
     }
 
+    [Fact]
+    public async Task List_Returns_Names_And_Meta_Only()
+    {
+        _db.Secrets.Add(Secret.Create(_tenant, _project, _env, "A", new byte[] { 1 }, Guid.NewGuid()));
+        _db.Secrets.Add(Secret.Create(_tenant, _project, _env, "B", new byte[] { 2 }, Guid.NewGuid()));
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.ListSecretsQueryHandler(_db);
+        var list = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.ListSecrets.ListSecretsQuery(_project, _env));
+        Assert.Equal(new[] { "A", "B" }, list.Select(s => s.Name));
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }

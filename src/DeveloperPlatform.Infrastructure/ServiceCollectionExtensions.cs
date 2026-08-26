@@ -22,6 +22,7 @@ using DeveloperPlatform.Application.Projects.CreateProject;
 using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
 using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
@@ -105,6 +106,7 @@ public static class ServiceCollectionExtensions
         // Secrets (Slice B)
         services.AddScoped<ISecretRepository, SecretRepository>();
         services.AddScoped<ICommandHandler<SetSecretCommand, Unit>, SetSecretCommandHandler>();
+        services.AddScoped<IQueryHandler<ListSecretsQuery, IReadOnlyList<SecretSummary>>, ListSecretsQueryHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

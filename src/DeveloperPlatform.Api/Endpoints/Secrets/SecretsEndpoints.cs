@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using Asp.Versioning.Builder;
 using DeveloperPlatform.Application.Commands;
+using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,8 +22,17 @@ public static class SecretsEndpoints
             return Results.NoContent();
         }).WithName("SetSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status400BadRequest);
 
+        group.MapGet("/", async (Guid projectId, Guid environmentId, IQueryDispatcher d, CancellationToken ct) =>
+        {
+            var results = await d.SendAsync<ListSecretsQuery, IReadOnlyList<SecretSummary>>(
+                new ListSecretsQuery(projectId, environmentId), ct);
+            return Results.Ok(results.Select(s => new SecretResponse(s.Name, s.CreatedAt, s.UpdatedAt)));
+        }).WithName("ListSecrets").Produces<IEnumerable<SecretResponse>>();
+
         return app;
     }
 
     public record SetSecretRequest(string Value);
+
+    public record SecretResponse(string Name, DateTime CreatedAt, DateTime UpdatedAt);
 }
