@@ -19,6 +19,7 @@ using DeveloperPlatform.Application.Projects.DeleteProject;
 using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
+using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Infrastructure.ApiKeys;
 using DeveloperPlatform.Infrastructure.Audit;
@@ -73,6 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<IssueApiKeyCommand, IssueApiKeyResult>, IssueApiKeyCommandHandler>();
         services.AddScoped<ICommandHandler<RevokeApiKeyCommand, Unit>, RevokeApiKeyCommandHandler>();
         services.AddScoped<IQueryHandler<GetApiKeysQuery, IReadOnlyList<ApiKeySummary>>, GetApiKeysQueryHandler>();
+        services.AddScoped<IQueryHandler<GetServiceAccountsQuery, IReadOnlyList<ServiceAccountSummary>>, GetServiceAccountsQueryHandler>();
 
         // Project handlers
         services.AddScoped<IProjectRepository, ProjectRepository>();

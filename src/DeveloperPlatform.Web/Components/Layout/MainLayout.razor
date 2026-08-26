@@ -1,14 +1,19 @@
 @inherits LayoutComponentBase
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 
 <MudThemeProvider Theme="DevPlatformTheme.Instance" />
 
 <MudLayout>
     <MudAppBar Elevation="0" Dense="true" Color="Color.Inherit">
+        <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       aria-label="Toggle navigation"
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)" />
         <MudText Typo="Typo.h6" Style="font-weight:600;letter-spacing:-0.02em">Developer Platform</MudText>
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mud-text-secondary mr-3">@context.User.Identity?.Name</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary mr-3 d-none d-sm-flex">@context.User.Identity?.Name</MudText>
                 <form method="post" action="/logout">
                     <AntiforgeryToken />
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Size="Size.Small"
@@ -18,7 +23,10 @@
         </AuthorizeView>
     </MudAppBar>
 
-    <MudDrawer Open="true" Variant="@DrawerVariant.Persistent" Elevation="0" ClipMode="DrawerClipMode.Always">
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="@(_isMobile ? DrawerVariant.Temporary : DrawerVariant.Persistent)"
+               ClipMode="@(_isMobile ? DrawerClipMode.Never : DrawerClipMode.Always)"
+               Elevation="@(_isMobile ? 3 : 1)">
         <MudDrawerHeader>
             <MudText Typo="Typo.overline" Class="mud-text-secondary" Style="font-weight:600">Menu</MudText>
         </MudDrawerHeader>
@@ -26,8 +34,59 @@
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 px-6">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 px-4 px-sm-6">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isMobile;
+    private bool _initialized;
+    private bool _jsInitialized;
+    private DotNetObjectReference<MainLayout>? _selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("devPlatformLayout.init", _selfRef);
+            _jsInitialized = true;
+        }
+    }
+
+    // Invoked from js/layout.js on load and whenever the window is resized.
+    [JSInvokable]
+    public void OnViewportWidthChanged(int width)
+    {
+        var mobile = width < 960; // MudBlazor's Md breakpoint
+        if (!_initialized || mobile != _isMobile)
+        {
+            _isMobile = mobile;
+            _drawerOpen = !mobile; // open on desktop, collapsed on mobile
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Only clean up JS if init actually ran on an interactive circuit.
+        // The prerender pass creates and disposes this component without ever
+        // calling init, and issuing interop there throws InvalidOperationException.
+        if (_jsInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("devPlatformLayout.dispose");
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit already gone during teardown — nothing to clean up.
+            }
+        }
+        _selfRef?.Dispose();
+    }
+}

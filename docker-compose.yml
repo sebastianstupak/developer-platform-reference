@@ -55,6 +55,7 @@ services:
       - "8090:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./keycloak/themes/devplatform:/opt/keycloak/themes/devplatform:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:8080/realms/developer-platform/.well-known/openid-configuration || exit 1"]
       interval: 15s

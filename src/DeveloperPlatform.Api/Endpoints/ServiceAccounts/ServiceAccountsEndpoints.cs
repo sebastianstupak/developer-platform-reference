@@ -2,7 +2,9 @@ using Asp.Versioning;
 using Asp.Versioning.Builder;
 using DeveloperPlatform.Application.Authorization;
 using DeveloperPlatform.Application.Commands;
+using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
+using DeveloperPlatform.Application.ServiceAccounts.GetServiceAccounts;
 using DeveloperPlatform.Domain.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,6 +31,14 @@ public static class ServiceAccountsEndpoints
         .WithSummary("Create a service account with permission grants")
         .Produces<CreateServiceAccountResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
+
+        app.MapGet("/api/v1/service-accounts", async (IQueryDispatcher dispatcher, CancellationToken ct) =>
+            Results.Ok(await dispatcher.SendAsync<GetServiceAccountsQuery, IReadOnlyList<ServiceAccountSummary>>(
+                new GetServiceAccountsQuery(), ct)))
+        .WithName("GetServiceAccounts").WithTags("Service Accounts")
+        .WithSummary("List service accounts")
+        .Produces<IReadOnlyList<ServiceAccountSummary>>(StatusCodes.Status200OK)
         .WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
 
         return app;
