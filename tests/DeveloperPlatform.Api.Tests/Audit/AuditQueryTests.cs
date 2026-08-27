@@ -95,6 +95,24 @@ public class AuditQueryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Filters_By_ProjectId()
+    {
+        var projectA = Guid.NewGuid();
+        var projectB = Guid.NewGuid();
+        _db.AuditEvents.Add(AuditEvent.Create(_tenant, new DateTime(2026, 1, 1), "SetSecretCommand",
+            AuditStatus.Success, null, null, null, projectA, null, "127.0.0.1", false, null, new byte[] { 1 }, Guid.NewGuid()));
+        _db.AuditEvents.Add(AuditEvent.Create(_tenant, new DateTime(2026, 1, 2), "SetSecretCommand",
+            AuditStatus.Success, null, null, null, projectB, null, "127.0.0.1", false, null, new byte[] { 1 }, Guid.NewGuid()));
+        await _db.SaveChangesAsync();
+
+        var res = await new GetAuditEventsQueryHandler(_db).HandleAsync(new GetAuditEventsQuery(
+            new AuditFilter(null, null, [], [], [], null, projectA), 1, 25));
+
+        Assert.Equal(1, res.Total);
+        Assert.Equal(projectA, res.Items[0].ProjectId);
+    }
+
+    [Fact]
     public async Task Filters_By_Multiple_PrincipalIds()
     {
         var a = Guid.NewGuid();

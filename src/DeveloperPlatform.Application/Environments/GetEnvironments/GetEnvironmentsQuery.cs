@@ -12,4 +12,6 @@ public record GetEnvironmentsQuery(Guid ProjectId) : IQuery<IReadOnlyList<Enviro
     public Scope ResourceScope => Scope.Project(ProjectId);
 }
 
-public record EnvironmentSummary(Guid Id, string Name, EnvironmentType Type, DateTime CreatedAt);
+public record EnvironmentSummary(
+    Guid Id, string Name, EnvironmentType Type, DateTime CreatedAt,
+    int SecretCount, DateTime LastUpdatedAt);

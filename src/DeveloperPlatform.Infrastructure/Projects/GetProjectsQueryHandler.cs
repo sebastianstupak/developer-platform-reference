@@ -12,6 +12,10 @@ public sealed class GetProjectsQueryHandler(ApplicationDbContext db)
         GetProjectsQuery query, CancellationToken ct = default)
         => await db.Projects
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new ProjectSummary(p.Id, p.Name, p.Description, p.CreatedAt))
+            .Select(p => new ProjectSummary(
+                p.Id, p.Name, p.Description, p.CreatedAt,
+                db.ProjectEnvironments.Count(e => e.ProjectId == p.Id),
+                db.Secrets.Where(s => s.ProjectId == p.Id)
+                    .Select(s => (DateTime?)s.UpdatedAt).Max() ?? p.CreatedAt))
             .ToListAsync(ct);
 }

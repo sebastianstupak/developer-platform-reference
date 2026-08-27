@@ -1,15 +1,12 @@
 @page "/projects"
 @attribute [Authorize]
+@using DeveloperPlatform.Web.Components.Shared
 @inject DeveloperPlatformApiClient ApiClient
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
 @inject PersistentComponentState ApplicationState
 @inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
-
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 <PageTitle>Projects &mdash; Developer Platform</PageTitle>
 
@@ -31,46 +28,46 @@
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
     }
+    else if (_projects.Count == 0)
+    {
+        <MudStack AlignItems="AlignItems.Center" Class="py-10" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Outlined.FolderOpen" Size="Size.Large" Class="mud-text-disabled" />
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">No projects yet. Create your first one.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add"
+                       OnClick="OpenCreateDialog">New Project</MudButton>
+        </MudStack>
+    }
     else
     {
-        <MudDataGrid T="ProjectDto" Items="_projects"
-                     Bordered="false" Striped="false" Hover="true" Elevation="0"
-                     Dense="true"
-                     RowStyle="cursor:pointer;"
-                     RowClick="@(args => Navigation.NavigateTo($"/projects/{args.Item.Id}"))">
-            <Columns>
-                <PropertyColumn Property="p => p.Name" Title="Name" />
-                <PropertyColumn Property="p => p.Description" Title="Description" />
-                <TemplateColumn Title="Created" SortBy="p => p.CreatedAt">
-                    <CellTemplate>
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                            @context.Item.CreatedAt.ToString("yyyy-MM-dd")
-                        </MudText>
-                    </CellTemplate>
-                </TemplateColumn>
-                <TemplateColumn Title="" CellStyle="text-align:right;width:56px;">
-                    <CellTemplate>
-                        <div @onclick:stopPropagation="true">
-                            <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
-                                           Size="Size.Small"
-                                           Color="Color.Default"
-                                           aria-label="Delete project"
-                                           OnClick="@(() => DeleteProjectAsync(context.Item.Id))" />
+        <MudGrid Spacing="3">
+            @foreach (var project in _projects)
+            {
+                <MudItem xs="12" sm="6" md="4" @key="project.Id">
+                    <div class="dp-card project-card" tabindex="0" role="button"
+                         @onclick="@(() => Navigation.NavigateTo($"/projects/{project.Id}"))"
+                         @onkeydown="@(e => OnCardKey(e, project.Id))">
+                        <div class="dp-card__head">
+                            <span class="dp-avatar">@(project.Name.Length > 0 ? char.ToUpperInvariant(project.Name[0]).ToString() : "·")</span>
+                            <span class="dp-card__title">@project.Name</span>
+                            <div @onclick:stopPropagation="true" class="dp-card__action">
+                                <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline" Size="Size.Small"
+                                               Color="Color.Default" aria-label="@($"Delete {project.Name}")"
+                                               OnClick="@(() => DeleteProjectAsync(project.Id))" />
+                            </div>
                         </div>
-                    </CellTemplate>
-                </TemplateColumn>
-            </Columns>
-            <NoRecordsContent>
-                <MudStack AlignItems="AlignItems.Center" Class="py-10" Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Outlined.FolderOpen"
-                             Size="Size.Large"
-                             Class="mud-text-disabled" />
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                        No projects yet. Create your first one.
-                    </MudText>
-                </MudStack>
-            </NoRecordsContent>
-        </MudDataGrid>
+                        <p class="dp-card__desc">
+                            @(string.IsNullOrWhiteSpace(project.Description) ? "No description" : project.Description)
+                        </p>
+                        <div class="dp-card__meta">
+                            <span class="dp-meta"><MudIcon Icon="@Icons.Material.Outlined.Layers" Size="Size.Small" />
+                                <span class="dp-mono">@project.EnvironmentCount</span>&nbsp;@(project.EnvironmentCount == 1 ? "environment" : "environments")</span>
+                            <span class="dp-meta__sep"></span>
+                            <span class="dp-meta">updated @TimeFormat.Relative(project.LastActivityAt)</span>
+                        </div>
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
     }
 </MudStack>
 
@@ -93,6 +90,14 @@
         _loading = true;
         _projects = await ApiClient.GetProjectsAsync();
         _loading = false;
+    }
+
+    private void OnCardKey(KeyboardEventArgs e, Guid projectId)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            Navigation.NavigateTo($"/projects/{projectId}");
+        }
     }
 
     private async Task OpenCreateDialog()

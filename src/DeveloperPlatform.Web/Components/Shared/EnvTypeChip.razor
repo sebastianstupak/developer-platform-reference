@@ -1,0 +1,16 @@
+@using MudBlazor
+
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@ColorFor(Type)" Class="ma-0">@Type</MudChip>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Type { get; set; } = string.Empty;
+
+    private static Color ColorFor(string type) => type switch
+    {
+        "Production" => Color.Error,
+        "Staging" => Color.Warning,
+        "Development" => Color.Info,
+        _ => Color.Default,
+    };
+}

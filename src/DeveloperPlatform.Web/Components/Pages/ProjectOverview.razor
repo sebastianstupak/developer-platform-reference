@@ -1,0 +1,212 @@
+@page "/projects/{ProjectId:guid}"
+@attribute [Authorize]
+@using DeveloperPlatform.Web.Components.Shared
+@using DeveloperPlatform.Web.State
+@inject DeveloperPlatformApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ActiveContextService Context
+@inject PersistentComponentState ApplicationState
+@inject DeveloperPlatform.Web.Http.TokenProvider TokenProvider
+
+<PageTitle>@(_project?.Name ?? "Project") &mdash; Developer Platform</PageTitle>
+
+<MudStack Spacing="6">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIconButton Icon="@Icons.Material.Outlined.ArrowBack" Size="Size.Small"
+                           aria-label="Back to projects" OnClick="@(() => Navigation.NavigateTo("/projects"))" />
+            <div>
+                <MudText Typo="Typo.h5">@(_project?.Name ?? "Project")</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                    @(string.IsNullOrWhiteSpace(_project?.Description) ? "Project overview." : _project!.Description)
+                </MudText>
+            </div>
+        </MudStack>
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Add"
+                       OnClick="OpenCreateEnvironmentDialog">New environment</MudButton>
+            <MudMenu Icon="@Icons.Material.Outlined.MoreVert" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Icon="@Icons.Material.Outlined.DeleteOutline" OnClick="DeleteProjectAsync">Delete project</MudMenuItem>
+            </MudMenu>
+        </MudStack>
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <div>
+            <MudText Typo="Typo.overline" Class="mud-text-secondary">
+                @_environments.Count @(_environments.Count == 1 ? "environment" : "environments") ·
+                @_totalSecrets @(_totalSecrets == 1 ? "secret" : "secrets")
+            </MudText>
+            <MudGrid Spacing="3" Class="mt-1">
+                @foreach (var env in _environments)
+                {
+                    <MudItem xs="12" sm="6" md="4" @key="env.Id">
+                        <div class="dp-card env-card" data-env="@env.Type" tabindex="0" role="button"
+                             @onclick="@(() => OpenEnvironment(env))"
+                             @onkeydown="@(e => OnEnvKey(e, env))">
+                            <div class="dp-card__head">
+                                <span class="dp-card__title">@env.Name</span>
+                                <EnvTypeChip Type="@env.Type" />
+                            </div>
+                            <div class="dp-card__meta">
+                                <span class="dp-meta"><MudIcon Icon="@Icons.Material.Outlined.Key" Size="Size.Small" />
+                                    <span class="dp-mono">@env.SecretCount</span>&nbsp;@(env.SecretCount == 1 ? "secret" : "secrets")</span>
+                                <span class="dp-meta__sep"></span>
+                                <span class="dp-meta">updated @TimeFormat.Relative(env.LastUpdatedAt)</span>
+                            </div>
+                        </div>
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6" md="4">
+                    <div class="dp-card env-card--new" tabindex="0" role="button"
+                         @onclick="OpenCreateEnvironmentDialog"
+                         @onkeydown="@(e => { if (e.Key is "Enter" or " ") { InvokeAsync(OpenCreateEnvironmentDialog); } })">
+                        <MudIcon Icon="@Icons.Material.Outlined.Add" Size="Size.Small" />
+                        <span>New environment</span>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </div>
+
+        <div>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                <MudText Typo="Typo.subtitle1" Style="font-weight:600;">Recent activity</MudText>
+                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => Navigation.NavigateTo("/audit"))">View all in Audit</MudButton>
+            </MudStack>
+            @if (_recent.Count == 0)
+            {
+                <div class="dp-empty">
+                    <MudIcon Icon="@Icons.Material.Outlined.History" Class="dp-empty__icon" />
+                    <span>No activity yet. Creating environments and setting secrets will show up here.</span>
+                </div>
+            }
+            else
+            {
+                <MudPaper Elevation="0" Class="dp-panel">
+                    <MudList T="AuditEventDto" Dense="true">
+                        @foreach (var ev in _recent)
+                        {
+                            <MudListItem T="AuditEventDto">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                                 Color="@(ev.Status == "Success" ? Color.Success : Color.Error)">@ev.Status</MudChip>
+                                        <MudText Typo="Typo.body2">@ev.CommandType</MudText>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@(ev.ActorDisplay ?? "—")</MudText>
+                                    </MudStack>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@TimeFormat.Relative(ev.OccurredAt)</MudText>
+                                </MudStack>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            }
+        </div>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    private ProjectDto? _project;
+    private IReadOnlyList<EnvironmentDto> _environments = [];
+    private IReadOnlyList<AuditEventDto> _recent = [];
+    private int _totalSecrets;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ApplicationState.TryTakeFromJson<string>("AccessToken", out var token))
+        {
+            TokenProvider.AccessToken = token;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var projects = await ApiClient.GetProjectsAsync();
+        _project = projects.FirstOrDefault(p => p.Id == ProjectId);
+        if (_project is not null)
+        {
+            Context.SetProject(new ActiveProjectRef(_project.Id, _project.Name));
+        }
+
+        _environments = await ApiClient.GetEnvironmentsAsync(ProjectId);
+        _totalSecrets = _environments.Sum(e => e.SecretCount);
+
+        var page = await ApiClient.GetAuditEventsAsync(
+            new AuditFilterDto(null, null, [], [], [], null, ProjectId), 1, 8);
+        _recent = page.Items;
+
+        _loading = false;
+    }
+
+    private void OpenEnvironment(EnvironmentDto env)
+    {
+        Context.SetEnvironment(new ActiveEnvironmentRef(env.Id, env.Name, env.Type));
+        Navigation.NavigateTo($"/projects/{ProjectId}/environments/{env.Id}");
+    }
+
+    private void OnEnvKey(KeyboardEventArgs e, EnvironmentDto env)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            OpenEnvironment(env);
+        }
+    }
+
+    private async Task OpenCreateEnvironmentDialog()
+    {
+        var dialog = await DialogService.ShowAsync<EnvironmentDialog>("New environment");
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not ValueTuple<string, string> value)
+        {
+            return;
+        }
+
+        var (name, type) = value;
+        try
+        {
+            await ApiClient.CreateEnvironmentAsync(ProjectId, name, type);
+            Snackbar.Add("Environment created.", Severity.Success);
+            await LoadAsync();
+        }
+        catch
+        {
+            Snackbar.Add("Couldn't create the environment.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteProjectAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete project", "This will permanently delete the project. Continue?",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed is not true)
+        {
+            return;
+        }
+
+        if (await ApiClient.DeleteProjectAsync(ProjectId))
+        {
+            Context.Clear();
+            Snackbar.Add("Project deleted.", Severity.Success);
+            Navigation.NavigateTo("/projects");
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete project.", Severity.Error);
+        }
+    }
+}

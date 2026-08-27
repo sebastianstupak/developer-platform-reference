@@ -1,0 +1,112 @@
+@* Mobile-friendly project/environment picker: a dialog with a searchable list
+   of projects and the active project's environments. Selecting navigates. *@
+@using DeveloperPlatform.Web.Http.Models
+@using DeveloperPlatform.Web.State
+@using Microsoft.AspNetCore.Components.Web
+@inject DeveloperPlatformApiClient ApiClient
+@inject ActiveContextService Context
+@inject NavigationManager Navigation
+
+<MudDialog Class="dp-ctxdlg-root">
+    <DialogContent>
+        <div class="dp-command dp-ctxdlg">
+            <div class="dp-command__input">
+                <svg class="dp-command__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                </svg>
+                <input @ref="_searchRef" class="dp-command__search" type="text" autocomplete="off"
+                       placeholder="Search projects or environments…" value="@_query" @oninput="OnInput" />
+            </div>
+            <div class="dp-command__list">
+                <div class="dp-ctxdlg__label">Projects</div>
+                @if (FilteredProjects.Count == 0)
+                {
+                    <div class="dp-command__empty">No projects match.</div>
+                }
+                else
+                {
+                    @foreach (var p in FilteredProjects)
+                    {
+                        <div class="dp-command__item" @onclick="@(() => PickProject(p))">
+                            <span class="dp-avatar dp-avatar--sm">@Initial(p.Name)</span>
+                            <span class="dp-command__label">@p.Name</span>
+                            @if (p.Id == ActiveProjectId)
+                            {
+                                <svg class="dp-command__check" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                            }
+                        </div>
+                    }
+                }
+
+                @if (FilteredEnvironments.Count > 0)
+                {
+                    <div class="dp-ctxdlg__label">Environments</div>
+                    @foreach (var e in FilteredEnvironments)
+                    {
+                        <div class="dp-command__item" @onclick="@(() => PickEnvironment(e))">
+                            <span class="dp-env-dot" data-env="@e.Type"></span>
+                            <span class="dp-command__label">@e.Name</span>
+                            @if (e.Id == ActiveEnvironmentId)
+                            {
+                                <svg class="dp-command__check" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Guid? ActiveProjectId { get; set; }
+    [Parameter] public Guid? ActiveEnvironmentId { get; set; }
+
+    private IReadOnlyList<ProjectDto> _projects = [];
+    private IReadOnlyList<EnvironmentDto> _environments = [];
+    private string _query = string.Empty;
+    private ElementReference _searchRef;
+
+    private List<ProjectDto> FilteredProjects => Match(_projects, p => p.Name);
+    private List<EnvironmentDto> FilteredEnvironments => Match(_environments, e => e.Name);
+
+    private List<T> Match<T>(IEnumerable<T> items, Func<T, string> text) => string.IsNullOrWhiteSpace(_query)
+        ? items.ToList()
+        : items.Where(i => text(i).Contains(_query, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private static string Initial(string name) => name.Length > 0 ? char.ToUpperInvariant(name[0]).ToString() : "·";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await ApiClient.GetProjectsAsync();
+        if (ActiveProjectId is { } pid)
+        {
+            _environments = await ApiClient.GetEnvironmentsAsync(pid);
+        }
+    }
+
+    private void OnInput(ChangeEventArgs e) => _query = e.Value?.ToString() ?? string.Empty;
+
+    private void PickProject(ProjectDto p)
+    {
+        Context.SetProject(new ActiveProjectRef(p.Id, p.Name));
+        Navigation.NavigateTo($"/projects/{p.Id}");
+        MudDialog.Close();
+    }
+
+    private void PickEnvironment(EnvironmentDto e)
+    {
+        if (ActiveProjectId is not { } pid)
+        {
+            return;
+        }
+
+        Context.SetEnvironment(new ActiveEnvironmentRef(e.Id, e.Name, e.Type));
+        Navigation.NavigateTo($"/projects/{pid}/environments/{e.Id}");
+        MudDialog.Close();
+    }
+}
