@@ -48,31 +48,29 @@
                 @foreach (var env in _environments)
                 {
                     <MudItem xs="12" sm="6" md="4" @key="env.Id">
-                        <MudPaper Elevation="0" Class="pa-4" Style="border:1px solid var(--mud-palette-lines-default);border-radius:0.5rem;cursor:pointer;height:100%;"
-                                  @onclick="@(() => OpenEnvironment(env))">
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@env.Name</MudText>
-                                    <EnvTypeChip Type="@env.Type" />
-                                </MudStack>
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mud-text-secondary">
-                                    <MudIcon Icon="@Icons.Material.Outlined.Key" Size="Size.Small" />
-                                    <MudText Typo="Typo.caption">@env.SecretCount @(env.SecretCount == 1 ? "secret" : "secrets")</MudText>
-                                    <MudText Typo="Typo.caption" Class="mx-1">·</MudText>
-                                    <MudText Typo="Typo.caption">updated @TimeFormat.Relative(env.LastUpdatedAt)</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudPaper>
+                        <div class="dp-card env-card" data-env="@env.Type" tabindex="0" role="button"
+                             @onclick="@(() => OpenEnvironment(env))"
+                             @onkeydown="@(e => OnEnvKey(e, env))">
+                            <div class="dp-card__head">
+                                <span class="dp-card__title">@env.Name</span>
+                                <EnvTypeChip Type="@env.Type" />
+                            </div>
+                            <div class="dp-card__meta">
+                                <span class="dp-meta"><MudIcon Icon="@Icons.Material.Outlined.Key" Size="Size.Small" />
+                                    <span class="dp-mono">@env.SecretCount</span>&nbsp;@(env.SecretCount == 1 ? "secret" : "secrets")</span>
+                                <span class="dp-meta__sep"></span>
+                                <span class="dp-meta">updated @TimeFormat.Relative(env.LastUpdatedAt)</span>
+                            </div>
+                        </div>
                     </MudItem>
                 }
                 <MudItem xs="12" sm="6" md="4">
-                    <MudPaper Elevation="0" Class="pa-4 d-flex align-center justify-center" Style="border:1px dashed var(--mud-palette-lines-default);border-radius:0.5rem;cursor:pointer;height:100%;min-height:96px;"
-                              @onclick="OpenCreateEnvironmentDialog">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mud-text-secondary">
-                            <MudIcon Icon="@Icons.Material.Outlined.Add" Size="Size.Small" />
-                            <MudText Typo="Typo.body2">New environment</MudText>
-                        </MudStack>
-                    </MudPaper>
+                    <div class="dp-card env-card--new" tabindex="0" role="button"
+                         @onclick="OpenCreateEnvironmentDialog"
+                         @onkeydown="@(e => { if (e.Key is "Enter" or " ") { InvokeAsync(OpenCreateEnvironmentDialog); } })">
+                        <MudIcon Icon="@Icons.Material.Outlined.Add" Size="Size.Small" />
+                        <span>New environment</span>
+                    </div>
                 </MudItem>
             </MudGrid>
         </div>
@@ -84,11 +82,14 @@
             </MudStack>
             @if (_recent.Count == 0)
             {
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">No recent activity for this project.</MudText>
+                <div class="dp-empty">
+                    <MudIcon Icon="@Icons.Material.Outlined.History" Class="dp-empty__icon" />
+                    <span>No activity yet. Creating environments and setting secrets will show up here.</span>
+                </div>
             }
             else
             {
-                <MudPaper Elevation="0" Style="border:1px solid var(--mud-palette-lines-default);border-radius:0.5rem;">
+                <MudPaper Elevation="0" Class="dp-panel">
                     <MudList T="AuditEventDto" Dense="true">
                         @foreach (var ev in _recent)
                         {
@@ -155,6 +156,14 @@
     {
         Context.SetEnvironment(new ActiveEnvironmentRef(env.Id, env.Name, env.Type));
         Navigation.NavigateTo($"/projects/{ProjectId}/environments/{env.Id}");
+    }
+
+    private void OnEnvKey(KeyboardEventArgs e, EnvironmentDto env)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            OpenEnvironment(env);
+        }
     }
 
     private async Task OpenCreateEnvironmentDialog()

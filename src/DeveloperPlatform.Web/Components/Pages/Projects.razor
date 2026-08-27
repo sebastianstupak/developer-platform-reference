@@ -43,28 +43,28 @@
             @foreach (var project in _projects)
             {
                 <MudItem xs="12" sm="6" md="4" @key="project.Id">
-                    <MudPaper Elevation="0" Class="pa-4 project-card" Style="border:1px solid var(--mud-palette-lines-default);border-radius:0.5rem;cursor:pointer;height:100%;"
-                              @onclick="@(() => Navigation.NavigateTo($"/projects/{project.Id}"))">
-                        <MudStack Spacing="2" Style="height:100%;">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@project.Name</MudText>
-                                <div @onclick:stopPropagation="true">
-                                    <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline" Size="Size.Small"
-                                                   Color="Color.Default" aria-label="@($"Delete {project.Name}")"
-                                                   OnClick="@(() => DeleteProjectAsync(project.Id))" />
-                                </div>
-                            </MudStack>
-                            <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="flex:1 1 auto;">
-                                @(string.IsNullOrWhiteSpace(project.Description) ? "No description" : project.Description)
-                            </MudText>
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mud-text-secondary">
-                                <MudIcon Icon="@Icons.Material.Outlined.Layers" Size="Size.Small" />
-                                <MudText Typo="Typo.caption">@project.EnvironmentCount @(project.EnvironmentCount == 1 ? "environment" : "environments")</MudText>
-                                <MudText Typo="Typo.caption" Class="mx-1">·</MudText>
-                                <MudText Typo="Typo.caption">updated @TimeFormat.Relative(project.LastActivityAt)</MudText>
-                            </MudStack>
-                        </MudStack>
-                    </MudPaper>
+                    <div class="dp-card project-card" tabindex="0" role="button"
+                         @onclick="@(() => Navigation.NavigateTo($"/projects/{project.Id}"))"
+                         @onkeydown="@(e => OnCardKey(e, project.Id))">
+                        <div class="dp-card__head">
+                            <span class="dp-avatar">@(project.Name.Length > 0 ? char.ToUpperInvariant(project.Name[0]).ToString() : "·")</span>
+                            <span class="dp-card__title">@project.Name</span>
+                            <div @onclick:stopPropagation="true" class="dp-card__action">
+                                <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline" Size="Size.Small"
+                                               Color="Color.Default" aria-label="@($"Delete {project.Name}")"
+                                               OnClick="@(() => DeleteProjectAsync(project.Id))" />
+                            </div>
+                        </div>
+                        <p class="dp-card__desc">
+                            @(string.IsNullOrWhiteSpace(project.Description) ? "No description" : project.Description)
+                        </p>
+                        <div class="dp-card__meta">
+                            <span class="dp-meta"><MudIcon Icon="@Icons.Material.Outlined.Layers" Size="Size.Small" />
+                                <span class="dp-mono">@project.EnvironmentCount</span>&nbsp;@(project.EnvironmentCount == 1 ? "environment" : "environments")</span>
+                            <span class="dp-meta__sep"></span>
+                            <span class="dp-meta">updated @TimeFormat.Relative(project.LastActivityAt)</span>
+                        </div>
+                    </div>
                 </MudItem>
             }
         </MudGrid>
@@ -90,6 +90,14 @@
         _loading = true;
         _projects = await ApiClient.GetProjectsAsync();
         _loading = false;
+    }
+
+    private void OnCardKey(KeyboardEventArgs e, Guid projectId)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            Navigation.NavigateTo($"/projects/{projectId}");
+        }
     }
 
     private async Task OpenCreateDialog()

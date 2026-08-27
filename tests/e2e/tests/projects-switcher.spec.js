@@ -38,9 +38,9 @@ test.describe('Projects & environment switcher', () => {
     await expect(switcherInput).toBeVisible();
     await expect(switcherInput).not.toHaveValue('');
 
-    // Environment cards render an EnvTypeChip (Development/Staging/Production); the
-    // dashed "New environment" placeholder tile doesn't, so this locator excludes it.
-    const envCard = page.locator('.pa-4:has(.mud-chip)').first();
+    // Real environment cards carry the .env-card class; the dashed "New environment"
+    // placeholder is .env-card--new, so this locator excludes it.
+    const envCard = page.locator('.env-card').first();
     await expect(envCard).toBeVisible({ timeout: 30_000 });
     await envCard.click();
 

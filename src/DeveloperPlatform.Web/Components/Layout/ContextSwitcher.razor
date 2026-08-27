@@ -19,6 +19,11 @@
     <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
              Class="mud-text-disabled d-none d-sm-flex" />
 
+    @if (_selectedEnvironment is not null)
+    {
+        <span class="dp-env-dot d-none d-sm-flex" data-env="@_selectedEnvironment.Type"></span>
+    }
+
     <MudAutocomplete T="EnvironmentDto"
                      Value="_selectedEnvironment"
                      ValueChanged="OnEnvironmentChanged"
