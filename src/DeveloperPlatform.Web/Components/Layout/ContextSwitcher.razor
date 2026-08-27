@@ -1,0 +1,114 @@
+@using DeveloperPlatform.Web.Http.Models
+@using DeveloperPlatform.Web.State
+@implements IDisposable
+@inject DeveloperPlatformApiClient ApiClient
+@inject ActiveContextService Context
+@inject NavigationManager Navigation
+
+<div class="d-flex align-center gap-1" style="min-width:0;">
+    <MudAutocomplete T="ProjectDto"
+                     Value="_selectedProject"
+                     ValueChanged="OnProjectChanged"
+                     SearchFunc="SearchProjects"
+                     ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                     Placeholder="Select project"
+                     Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                     Class="context-switcher-project" Style="max-width:220px;"
+                     Clearable="false" ResetValueOnEmptyText="false" />
+
+    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
+             Class="mud-text-disabled d-none d-sm-flex" />
+
+    <MudAutocomplete T="EnvironmentDto"
+                     Value="_selectedEnvironment"
+                     ValueChanged="OnEnvironmentChanged"
+                     SearchFunc="SearchEnvironments"
+                     ToStringFunc="@(e => e?.Name ?? string.Empty)"
+                     Placeholder="@(_selectedProject is null ? "—" : "Select environment")"
+                     Disabled="@(_selectedProject is null)"
+                     Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                     Class="context-switcher-env d-none d-sm-flex" Style="max-width:200px;"
+                     Clearable="false" ResetValueOnEmptyText="false" />
+</div>
+
+@code {
+    private IReadOnlyList<ProjectDto> _projects = [];
+    private IReadOnlyList<EnvironmentDto> _environments = [];
+    private ProjectDto? _selectedProject;
+    private EnvironmentDto? _selectedEnvironment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Context.OnChange += OnContextChanged;
+        _projects = await ApiClient.GetProjectsAsync();
+        await SyncFromContextAsync();
+    }
+
+    // Route-as-source-of-truth: when a page pushes a new project/env into the context,
+    // reflect it in the switcher labels.
+    private async void OnContextChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await SyncFromContextAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task SyncFromContextAsync()
+    {
+        var projectId = Context.Project?.Id;
+        _selectedProject = projectId is null ? null : _projects.FirstOrDefault(p => p.Id == projectId);
+
+        if (_selectedProject is not null)
+        {
+            _environments = await ApiClient.GetEnvironmentsAsync(_selectedProject.Id);
+            var envId = Context.Environment?.Id;
+            _selectedEnvironment = envId is null ? null : _environments.FirstOrDefault(e => e.Id == envId);
+        }
+        else
+        {
+            _environments = [];
+            _selectedEnvironment = null;
+        }
+    }
+
+    private Task<IEnumerable<ProjectDto>> SearchProjects(string? value, CancellationToken ct)
+    {
+        var query = string.IsNullOrWhiteSpace(value)
+            ? _projects
+            : _projects.Where(p => p.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<IEnumerable<ProjectDto>>(query);
+    }
+
+    private Task<IEnumerable<EnvironmentDto>> SearchEnvironments(string? value, CancellationToken ct)
+    {
+        var query = string.IsNullOrWhiteSpace(value)
+            ? _environments
+            : _environments.Where(e => e.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<IEnumerable<EnvironmentDto>>(query);
+    }
+
+    private void OnProjectChanged(ProjectDto? project)
+    {
+        if (project is null || project.Id == _selectedProject?.Id)
+        {
+            return;
+        }
+
+        Context.SetProject(new ActiveProjectRef(project.Id, project.Name));
+        Navigation.NavigateTo($"/projects/{project.Id}");
+    }
+
+    private void OnEnvironmentChanged(EnvironmentDto? env)
+    {
+        if (env is null || _selectedProject is null || env.Id == _selectedEnvironment?.Id)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo($"/projects/{_selectedProject.Id}/environments/{env.Id}");
+    }
+
+    public void Dispose() => Context.OnChange -= OnContextChanged;
+}
