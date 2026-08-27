@@ -504,6 +504,71 @@
     .dp-card:hover { transform: none; }
 }
 
+/* ---- Forms & inputs: harmonize MudBlazor outlined fields with the ------ */
+/* shadcn language (rounded, zinc border + focus, no Material blue).        */
+.mud-input.mud-input-outlined {
+    border-radius: 8px;
+}
+
+.mud-input.mud-input-outlined .mud-input-outlined-border {
+    border-radius: 8px;
+    border-color: var(--mud-palette-lines-default) !important;
+    transition: border-color 0.12s var(--dp-ease);
+}
+
+.mud-input.mud-input-outlined:hover:not(.mud-disabled) .mud-input-outlined-border {
+    border-color: color-mix(in srgb, var(--mud-palette-text-primary) 22%, var(--mud-palette-lines-default)) !important;
+}
+
+.mud-input.mud-input-outlined.mud-focused .mud-input-outlined-border {
+    border-color: var(--mud-palette-text-primary) !important;
+    border-width: 1px !important;
+}
+
+/* Calm Material's tall (53px) inputs down to ~43px. Padding stays symmetric,
+   so placeholder text stays centered and floating labels are unaffected. */
+.mud-input.mud-input-outlined:not(.mud-input-margin-dense) .mud-input-slot {
+    padding-top: 13px !important;
+    padding-bottom: 13px !important;
+}
+
+/* focused floating label should read as ink, not Material primary-blue */
+.mud-input-control.mud-focused .mud-input-label {
+    color: var(--mud-palette-text-primary);
+}
+
+/* Buttons never wrap their label */
+.mud-button-root {
+    white-space: nowrap;
+}
+
+/* Dialogs: softer, larger radius to match cards */
+.mud-dialog {
+    border-radius: 12px;
+}
+
+/* ---- Responsive -------------------------------------------------------- */
+.mud-appbar .mud-typography-h6 {
+    white-space: nowrap;
+}
+
+@media (max-width: 599.95px) {
+    /* Reclaim app-bar width on phones: drop the wordmark (the hamburger and
+       the project switcher identify context), and keep the switcher compact. */
+    .mud-appbar .mud-typography-h6 {
+        display: none;
+    }
+
+    .dp-combobox__trigger {
+        max-width: 168px;
+    }
+
+    .mud-appbar {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
 /* ---- Blazor error boundary -------------------------------------------- */
 .blazor-error-boundary {
     background: #b32121;
