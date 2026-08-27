@@ -63,3 +63,21 @@ test.describe('Projects & environment switcher', () => {
     await expect(page.locator('.dp-combobox__trigger').first()).toContainText('payments-api');
   });
 });
+
+test.describe('Mobile context dialog', () => {
+  test.use({ viewport: { width: 390, height: 850 } });
+
+  test('the acronym button opens a dialog to switch project', async ({ page }) => {
+    await login(page);
+    await page.goto('/projects');
+
+    // The compact button replaces the inline comboboxes on phones.
+    await page.locator('.dp-ctxbtn').click();
+    await expect(page.locator('.dp-ctxdlg')).toBeVisible();
+
+    // Pick a project from the dialog → navigates and the button reflects it.
+    await page.locator('.dp-ctxdlg .dp-command__item', { hasText: 'payments-api' }).first().click();
+    await page.waitForURL('**/projects/**');
+    await expect(page.locator('.dp-ctxbtn')).toContainText('payments-api');
+  });
+});

@@ -5,23 +5,51 @@
 @inject DeveloperPlatformApiClient ApiClient
 @inject ActiveContextService Context
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
 
 <div class="dp-switcher">
-    <Combobox TItem="ProjectDto" Items="_projects" Value="_selectedProject" ValueChanged="OnProjectChanged"
-              ToText="@(p => p.Name)" Placeholder="Select project" SearchPlaceholder="Search projects…"
-              EmptyText="@(q => $"No projects match “{q}”.")" />
+    @* Desktop / tablet: inline comboboxes *@
+    <span class="dp-switcher__desktop d-none d-sm-flex">
+        <Combobox TItem="ProjectDto" Items="_projects" Value="_selectedProject" ValueChanged="OnProjectChanged"
+                  ToText="@(p => p.Name)" Placeholder="Select project" SearchPlaceholder="Search projects…"
+                  EmptyText="@(q => $"No projects match “{q}”.")" />
 
-    <span class="dp-switcher__env d-none d-sm-flex">
-        <svg class="dp-switcher__sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        <span class="dp-switcher__env">
+            <svg class="dp-switcher__sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
 
-        <Combobox TItem="EnvironmentDto" Items="_environments" Value="_selectedEnvironment" ValueChanged="OnEnvironmentChanged"
-                  ToText="@(e => e.Name)" Placeholder="Select environment" SearchPlaceholder="Search environments…"
-                  EmptyText="@(q => $"No environments match “{q}”.")" Disabled="@(_selectedProject is null)">
-            <TriggerPrefix Context="env"><span class="dp-env-dot" data-env="@env.Type"></span></TriggerPrefix>
-            <ItemPrefix Context="env"><span class="dp-env-dot" data-env="@env.Type"></span></ItemPrefix>
-        </Combobox>
+            <Combobox TItem="EnvironmentDto" Items="_environments" Value="_selectedEnvironment" ValueChanged="OnEnvironmentChanged"
+                      ToText="@(e => e.Name)" Placeholder="Select environment" SearchPlaceholder="Search environments…"
+                      EmptyText="@(q => $"No environments match “{q}”.")" Disabled="@(_selectedProject is null)">
+                <TriggerPrefix Context="env"><span class="dp-env-dot" data-env="@env.Type"></span></TriggerPrefix>
+                <ItemPrefix Context="env"><span class="dp-env-dot" data-env="@env.Type"></span></ItemPrefix>
+            </Combobox>
+        </span>
     </span>
+
+    @* Phones: a compact acronym button that opens the selection dialog *@
+    <button type="button" class="dp-ctxbtn d-flex d-sm-none" @onclick="OpenMobileDialogAsync"
+            aria-label="Switch project and environment">
+        @if (_selectedProject is not null)
+        {
+            <span class="dp-avatar dp-avatar--xs">@Initial(_selectedProject.Name)</span>
+            <span class="dp-ctxbtn__name">@_selectedProject.Name</span>
+            @if (_selectedEnvironment is not null)
+            {
+                <span class="dp-env-dot" data-env="@_selectedEnvironment.Type"></span>
+            }
+        }
+        else
+        {
+            <svg class="dp-ctxbtn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" />
+            </svg>
+            <span class="dp-ctxbtn__name is-placeholder">Select project</span>
+        }
+        <svg class="dp-ctxbtn__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
 </div>
 
 @code {
@@ -29,6 +57,8 @@
     private IReadOnlyList<EnvironmentDto> _environments = [];
     private ProjectDto? _selectedProject;
     private EnvironmentDto? _selectedEnvironment;
+
+    private static string Initial(string name) => name.Length > 0 ? char.ToUpperInvariant(name[0]).ToString() : "·";
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,6 +115,17 @@
         }
 
         Navigation.NavigateTo($"/projects/{_selectedProject.Id}/environments/{env.Id}");
+    }
+
+    private async Task OpenMobileDialogAsync()
+    {
+        var parameters = new DialogParameters<ContextSwitchDialog>
+        {
+            { x => x.ActiveProjectId, _selectedProject?.Id },
+            { x => x.ActiveEnvironmentId, _selectedEnvironment?.Id },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<ContextSwitchDialog>("Switch context", parameters, options);
     }
 
     public void Dispose() => Context.OnChange -= OnContextChanged;
