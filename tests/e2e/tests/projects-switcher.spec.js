@@ -33,10 +33,10 @@ test.describe('Projects & environment switcher', () => {
     // Overview shows the "Recent activity" section.
     await expect(page.getByText('Recent activity', { exact: true })).toBeVisible();
 
-    // The app-bar project switcher reflects the active project (non-empty input value).
-    const switcherInput = page.locator('.context-switcher-project input');
-    await expect(switcherInput).toBeVisible();
-    await expect(switcherInput).not.toHaveValue('');
+    // The app-bar project combobox trigger reflects the active project (not the placeholder).
+    const switcherTrigger = page.locator('.dp-combobox__trigger').first();
+    await expect(switcherTrigger).toBeVisible();
+    await expect(switcherTrigger).not.toContainText('Select project');
 
     // Real environment cards carry the .env-card class; the dashed "New environment"
     // placeholder is .env-card--new, so this locator excludes it.
@@ -47,5 +47,19 @@ test.describe('Projects & environment switcher', () => {
     // Lands on the nested secrets route for that environment.
     await page.waitForURL('**/environments/**');
     await expect(page.getByText(/· secrets/)).toBeVisible();
+  });
+
+  test('the app-bar combobox searches and switches projects', async ({ page }) => {
+    // Open the project combobox → search box + option list appear (the open one).
+    await page.locator('.dp-combobox__trigger').first().click();
+    const popover = page.locator('.dp-combobox-popover.mud-popover-open');
+    await expect(popover).toBeVisible();
+    await expect(popover.locator('.dp-command__search')).toBeFocused();
+
+    // Type to filter, then pick the match; navigates and the trigger updates.
+    await popover.locator('.dp-command__search').fill('payments');
+    await popover.locator('.dp-command__item', { hasText: 'payments-api' }).first().click();
+    await page.waitForURL('**/projects/**');
+    await expect(page.locator('.dp-combobox__trigger').first()).toContainText('payments-api');
   });
 });
