@@ -649,6 +649,28 @@
     white-space: nowrap;
 }
 
+/* Brand column aligned to the sidebar, so the header divider is one continuous
+   line with the drawer's right border (full height, not shorter). */
+.dp-appbar__brand {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+}
+
+@media (min-width: 600px) {
+    .mud-appbar .mud-toolbar {
+        padding-left: 0 !important;
+    }
+
+    .dp-appbar__brand {
+        width: var(--mud-drawer-width-left, 260px);
+        box-sizing: border-box;
+        padding-left: 12px;
+        border-right: 1px solid var(--mud-palette-lines-default);
+    }
+}
+
 @media (max-width: 599.95px) {
     /* Reclaim app-bar width on phones: drop the wordmark (the hamburger and
        the project switcher identify context), and keep the switcher compact. */

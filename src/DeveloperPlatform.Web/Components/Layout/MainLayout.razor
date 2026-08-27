@@ -11,11 +11,12 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Dense="true" Color="Color.Inherit">
-        <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       aria-label="Toggle navigation"
-                       OnClick="@(() => _drawerOpen = !_drawerOpen)" />
-        <MudText Typo="Typo.h6" Style="font-weight:600;letter-spacing:-0.02em">Developer Platform</MudText>
-        <MudDivider Vertical="true" FlexItem="true" Class="mx-3 d-none d-sm-flex" />
+        <div class="dp-appbar__brand">
+            <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                           aria-label="Toggle navigation"
+                           OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+            <MudText Typo="Typo.h6" Style="font-weight:600;letter-spacing:-0.02em">Developer Platform</MudText>
+        </div>
         <ContextSwitcher />
         <MudSpacer />
         <AuthorizeView>
