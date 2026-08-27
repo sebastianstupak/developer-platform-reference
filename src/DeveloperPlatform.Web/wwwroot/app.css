@@ -232,21 +232,55 @@
 }
 
 /* ---- App-bar context switcher ----------------------------------------- */
-.context-switcher-project .mud-input-slot,
-.context-switcher-env .mud-input-slot {
-    font-weight: 500;
-}
-
-.context-switcher-project .mud-input.mud-input-outlined .mud-input-outlined-border,
-.context-switcher-env .mud-input.mud-input-outlined .mud-input-outlined-border {
-    border-color: var(--mud-palette-lines-default);
-    border-radius: 0.5rem;
+/* The class lands on the .mud-input-control root; MudBlazor's dense outlined
+   input reserves label space it never uses, so we resize it into a sleek pill
+   that sits centered in the 43px dense app bar. */
+.context-switcher-project,
+.context-switcher-env {
+    margin-top: 0;
 }
 
 .context-switcher-project .mud-input.mud-input-outlined,
 .context-switcher-env .mud-input.mud-input-outlined {
+    height: 32px;
+    min-height: 32px;
+    align-items: center;
     background: var(--mud-palette-background-gray);
-    border-radius: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.14s var(--dp-ease), box-shadow 0.14s var(--dp-ease);
+}
+
+.context-switcher-project .mud-input.mud-input-outlined:hover,
+.context-switcher-env .mud-input.mud-input-outlined:hover {
+    background: color-mix(in srgb, var(--mud-palette-text-primary) 6%, var(--mud-palette-background-gray));
+}
+
+.context-switcher-project input.mud-input-slot,
+.context-switcher-env input.mud-input-slot {
+    height: 30px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    box-sizing: border-box;
+    font-weight: 500;
+    font-size: 0.8125rem;
+}
+
+.context-switcher-project .mud-input-outlined-border,
+.context-switcher-env .mud-input-outlined-border {
+    border-color: var(--mud-palette-lines-default);
+    border-radius: 8px;
+}
+
+.context-switcher-project .mud-input-adornment .mud-icon-button,
+.context-switcher-env .mud-input-adornment .mud-icon-button {
+    padding: 4px;
+}
+
+/* focus ring on the active picker */
+.context-switcher-project .mud-input.mud-input-outlined.mud-focused .mud-input-outlined-border,
+.context-switcher-env .mud-input.mud-input-outlined.mud-focused .mud-input-outlined-border {
+    border-color: var(--mud-palette-text-primary);
+    border-width: 1px;
 }
 
 .dp-env-dot {
