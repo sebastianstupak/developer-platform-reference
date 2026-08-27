@@ -22,4 +22,5 @@ public record AuditFilterDto(
     IReadOnlyList<Guid> PrincipalIds,
     IReadOnlyList<string> CommandTypes,
     IReadOnlyList<string> Statuses,
-    bool? CrossTenantOnly);
+    bool? CrossTenantOnly,
+    Guid? ProjectId = null);

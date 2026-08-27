@@ -326,6 +326,11 @@ public sealed class DeveloperPlatformApiClient
             parts.Add($"crossTenantOnly={Uri.EscapeDataString(filter.CrossTenantOnly.Value.ToString())}");
         }
 
+        if (filter.ProjectId is not null)
+        {
+            parts.Add($"projectId={Uri.EscapeDataString(filter.ProjectId.Value.ToString())}");
+        }
+
         parts.Add($"page={page}");
         parts.Add($"pageSize={pageSize}");
 

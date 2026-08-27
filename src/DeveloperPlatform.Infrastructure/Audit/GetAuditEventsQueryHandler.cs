@@ -48,6 +48,11 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
             q = q.Where(e => e.IsCrossTenant);
         }
 
+        if (f.ProjectId is { } projectId)
+        {
+            q = q.Where(e => e.ProjectId == projectId);
+        }
+
         var total = await q.CountAsync(ct);
         var rows = await q.OrderByDescending(e => e.OccurredAt)
             .Skip((page - 1) * size).Take(size)

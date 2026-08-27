@@ -19,7 +19,7 @@ public record GetAuditEventsQuery(AuditFilter Filter, int Page, int PageSize)
 public record AuditFilter(
     DateTime? From, DateTime? To,
     IReadOnlyList<Guid> PrincipalIds, IReadOnlyList<string> CommandTypes,
-    IReadOnlyList<AuditStatus> Statuses, bool? CrossTenantOnly);
+    IReadOnlyList<AuditStatus> Statuses, bool? CrossTenantOnly, Guid? ProjectId = null);
 
 public record AuditEventSummary(
     Guid Id, DateTime OccurredAt, string CommandType, AuditStatus Status,
