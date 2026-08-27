@@ -12,6 +12,10 @@ public sealed class GetEnvironmentsQueryHandler(ApplicationDbContext db)
         => await db.ProjectEnvironments.AsNoTracking()
             .Where(e => e.ProjectId == query.ProjectId)
             .OrderBy(e => e.Name)
-            .Select(e => new EnvironmentSummary(e.Id, e.Name, e.Type, e.CreatedAt))
+            .Select(e => new EnvironmentSummary(
+                e.Id, e.Name, e.Type, e.CreatedAt,
+                db.Secrets.Count(s => s.EnvironmentId == e.Id),
+                db.Secrets.Where(s => s.EnvironmentId == e.Id)
+                    .Select(s => (DateTime?)s.UpdatedAt).Max() ?? e.CreatedAt))
             .ToListAsync(ct);
 }

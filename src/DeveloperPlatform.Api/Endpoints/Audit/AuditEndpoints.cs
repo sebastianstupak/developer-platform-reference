@@ -18,12 +18,12 @@ public static class AuditEndpoints
 
         group.MapGet("/", async (
             DateTime? from, DateTime? to, Guid[]? principalId, string[]? commandType,
-            AuditStatus[]? status, bool? crossTenantOnly, int? page, int? pageSize,
+            AuditStatus[]? status, bool? crossTenantOnly, Guid? projectId, int? page, int? pageSize,
             IQueryDispatcher d, CancellationToken ct) =>
         {
             var result = await d.SendAsync<GetAuditEventsQuery, PagedResult<AuditEventSummary>>(
                 new GetAuditEventsQuery(
-                    new AuditFilter(from, to, principalId ?? [], commandType ?? [], status ?? [], crossTenantOnly),
+                    new AuditFilter(from, to, principalId ?? [], commandType ?? [], status ?? [], crossTenantOnly, projectId),
                     page ?? 1, pageSize ?? 25), ct);
 
             return Results.Ok(new AuditPageResponse(

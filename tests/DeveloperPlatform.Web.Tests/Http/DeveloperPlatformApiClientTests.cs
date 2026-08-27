@@ -344,6 +344,20 @@ public sealed class DeveloperPlatformApiClientTests
     }
 
     [Fact]
+    public async Task GetAuditEventsAsync_Emits_ProjectId_Param_When_Set()
+    {
+        var capture = new CapturingHandler("{\"items\":[],\"total\":0,\"page\":1,\"pageSize\":8}");
+        var client = new DeveloperPlatformApiClient(
+            new HttpClient(capture) { BaseAddress = new Uri("http://localhost") });
+        var project = Guid.NewGuid();
+        var filter = new AuditFilterDto(null, null, [], [], [], null, project);
+
+        await client.GetAuditEventsAsync(filter, 1, 8);
+
+        Assert.Contains($"projectId={project}", capture.LastRequestUri!.Query);
+    }
+
+    [Fact]
     public async Task GetAuditEventsAsync_Returns_Empty_Page_On_Failure()
     {
         var handler = new MockHttpMessageHandler(HttpStatusCode.InternalServerError, string.Empty);

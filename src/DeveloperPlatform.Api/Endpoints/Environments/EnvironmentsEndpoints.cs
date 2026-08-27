@@ -22,7 +22,8 @@ public static class EnvironmentsEndpoints
         {
             var results = await d.SendAsync<GetEnvironmentsQuery, IReadOnlyList<EnvironmentSummary>>(
                 new GetEnvironmentsQuery(projectId), ct);
-            return Results.Ok(results.Select(e => new EnvironmentResponse(e.Id, e.Name, e.Type.ToString(), e.CreatedAt)));
+            return Results.Ok(results.Select(e => new EnvironmentResponse(
+                e.Id, e.Name, e.Type.ToString(), e.CreatedAt, e.SecretCount, e.LastUpdatedAt)));
         }).WithName("GetEnvironments").Produces<IEnumerable<EnvironmentResponse>>();
 
         group.MapPost("/", async (Guid projectId, [FromBody] CreateEnvironmentRequest req, ICommandDispatcher d, CancellationToken ct) =>
@@ -50,6 +51,8 @@ public static class EnvironmentsEndpoints
 
     public record CreateEnvironmentRequest(string Name, string Type);
     public record RenameEnvironmentRequest(string Name);
-    public record EnvironmentResponse(Guid Id, string Name, string Type, DateTime CreatedAt);
+    public record EnvironmentResponse(
+        Guid Id, string Name, string Type, DateTime CreatedAt,
+        int SecretCount, DateTime LastUpdatedAt);
     public record EnvironmentCreatedResponse(Guid EnvironmentId);
 }

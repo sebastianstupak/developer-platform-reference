@@ -1,3 +1,5 @@
 namespace DeveloperPlatform.Web.Http.Models;
 
-public record ProjectDto(Guid Id, string Name, string? Description, DateTime CreatedAt);
+public record ProjectDto(
+    Guid Id, string Name, string? Description, DateTime CreatedAt,
+    int EnvironmentCount, DateTime LastActivityAt);

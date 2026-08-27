@@ -1,0 +1,174 @@
+@* shadcn/Geist-style combobox: a trigger button that opens a popover with a
+   searchable command list (checkmark on the selected row, ↑/↓/Enter/Esc). *@
+@typeparam TItem
+@using Microsoft.AspNetCore.Components.Web
+@implements IDisposable
+
+<div class="dp-combobox">
+    <div class="dp-combobox__trigger @(Disabled ? "is-disabled" : "") @(_open ? "is-open" : "")"
+         role="combobox" aria-expanded="@_open" tabindex="0"
+         @onclick="Toggle" @onkeydown="OnTriggerKeyDown">
+        @if (TriggerPrefix is not null && Value is not null)
+        {
+            @TriggerPrefix(Value)
+        }
+        <span class="dp-combobox__value @(Value is null ? "is-placeholder" : "")">@TriggerText()</span>
+        <svg class="dp-combobox__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" />
+        </svg>
+    </div>
+
+    <MudPopover Open="_open" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+                Class="dp-combobox-popover" OverflowBehavior="OverflowBehavior.FlipOnOpen">
+        <div class="dp-command" @onkeydown="OnKeyDown">
+            <div class="dp-command__input">
+                <svg class="dp-command__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                </svg>
+                <input @ref="_searchRef" class="dp-command__search" type="text" autocomplete="off"
+                       placeholder="@SearchPlaceholder" value="@_query" @oninput="OnInput" />
+            </div>
+            <div class="dp-command__list" role="listbox">
+                @if (Filtered.Count == 0)
+                {
+                    <div class="dp-command__empty">@EmptyText(_query)</div>
+                }
+                else
+                {
+                    @for (var i = 0; i < Filtered.Count; i++)
+                    {
+                        var idx = i;
+                        var item = Filtered[i];
+                        <div class="dp-command__item @(idx == _highlight ? "is-active" : "")"
+                             role="option" aria-selected="@IsSelected(item)"
+                             @onclick="@(() => SelectAsync(item))" @onmouseenter="@(() => _highlight = idx)">
+                            @if (ItemPrefix is not null)
+                            {
+                                @ItemPrefix(item)
+                            }
+                            <span class="dp-command__label">@ToText(item)</span>
+                            @if (IsSelected(item))
+                            {
+                                <svg class="dp-command__check" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </MudPopover>
+</div>
+
+@if (_open)
+{
+    <div class="dp-combobox__scrim" @onclick="Close"></div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = [];
+    [Parameter] public TItem? Value { get; set; }
+    [Parameter] public EventCallback<TItem> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public Func<TItem, string> ToText { get; set; } = _ => string.Empty;
+    [Parameter] public string Placeholder { get; set; } = "Select…";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search…";
+    [Parameter] public Func<string, string> EmptyText { get; set; } = q => $"No results for “{q}”.";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemPrefix { get; set; }
+    [Parameter] public RenderFragment<TItem>? TriggerPrefix { get; set; }
+
+    private ElementReference _searchRef;
+    private bool _open;
+    private bool _focusPending;
+    private string _query = string.Empty;
+    private int _highlight;
+
+    private List<TItem> Filtered => string.IsNullOrWhiteSpace(_query)
+        ? Items.ToList()
+        : Items.Where(i => ToText(i).Contains(_query, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private string TriggerText() => Value is null ? Placeholder : ToText(Value);
+
+    private bool IsSelected(TItem item) => Value is not null && EqualityComparer<TItem>.Default.Equals(item, Value);
+
+    private void Toggle()
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        if (_open)
+        {
+            Close();
+        }
+        else
+        {
+            _open = true;
+            _query = string.Empty;
+            _highlight = 0;
+            _focusPending = true;
+        }
+    }
+
+    private void Close() => _open = false;
+
+    private void OnTriggerKeyDown(KeyboardEventArgs e)
+    {
+        if (!Disabled && e.Key is "Enter" or " " or "ArrowDown")
+        {
+            _open = true;
+            _query = string.Empty;
+            _highlight = 0;
+            _focusPending = true;
+        }
+    }
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? string.Empty;
+        _highlight = 0;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        var list = Filtered;
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (list.Count > 0) { _highlight = Math.Min(_highlight + 1, list.Count - 1); }
+                break;
+            case "ArrowUp":
+                if (list.Count > 0) { _highlight = Math.Max(_highlight - 1, 0); }
+                break;
+            case "Enter":
+                if (_highlight >= 0 && _highlight < list.Count) { await SelectAsync(list[_highlight]); }
+                break;
+            case "Escape":
+                Close();
+                break;
+        }
+    }
+
+    private async Task SelectAsync(TItem item)
+    {
+        _open = false;
+        _query = string.Empty;
+        await ValueChanged.InvokeAsync(item);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending)
+        {
+            _focusPending = false;
+            try { await _searchRef.FocusAsync(); } catch { /* popover not yet in DOM */ }
+        }
+    }
+
+    public void Dispose() { }
+}

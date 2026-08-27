@@ -28,7 +28,7 @@ public static class ProjectsEndpoints
                 new GetProjectsQuery(), ct);
 
             return Results.Ok(results.Select(p => new ProjectResponse(
-                p.Id, p.Name, p.Description, p.CreatedAt)));
+                p.Id, p.Name, p.Description, p.CreatedAt, p.EnvironmentCount, p.LastActivityAt)));
         })
         .WithName("GetProjects")
         .WithSummary("List projects")
@@ -71,7 +71,9 @@ public static class ProjectsEndpoints
 
     public record CreateProjectRequest(string Name, string? Description = null);
 
-    public record ProjectResponse(Guid Id, string Name, string? Description, DateTime CreatedAt);
+    public record ProjectResponse(
+        Guid Id, string Name, string? Description, DateTime CreatedAt,
+        int EnvironmentCount, DateTime LastActivityAt);
 
     public record ProjectCreatedResponse(Guid ProjectId);
 }
