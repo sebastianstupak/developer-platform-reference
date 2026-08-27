@@ -77,6 +77,10 @@ try
         {
             options.Authority = builder.Configuration["Keycloak:Authority"];
             options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            // Keep OIDC claim names as-issued ("email", "sub", …). The default legacy
+            // inbound mapping renames "email" to the WS-* ClaimTypes.Email URI, which is why
+            // PrincipalResolver couldn't find it and fell back to "{sub}@unknown".
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = false,

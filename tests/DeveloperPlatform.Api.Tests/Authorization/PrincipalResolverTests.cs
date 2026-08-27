@@ -58,6 +58,29 @@ public class PrincipalResolverTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Existing_User_Self_Heals_Stale_Email_On_Login()
+    {
+        // First login creates the User (and the tenant Owner).
+        await _sut.ResolveAsync(WithSubject("kc-heal"), _tenant);
+        var user = await _db.Users.SingleAsync(u => u.KeycloakSubject == "kc-heal");
+        user.UpdateProfile($"{user.KeycloakSubject}@unknown", "kc-heal"); // simulate a stale profile
+        await _db.SaveChangesAsync();
+
+        // A later login carrying a real email claim heals the stored profile.
+        var claims = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "kc-heal"),
+            new Claim("email", "real@example.com"),
+            new Claim("preferred_username", "Real Name"),
+        }));
+        await _sut.ResolveAsync(claims, _tenant);
+
+        var healed = await _db.Users.AsNoTracking().SingleAsync(u => u.KeycloakSubject == "kc-heal");
+        Assert.Equal("real@example.com", healed.Email);
+        Assert.Equal("Real Name", healed.DisplayName);
+    }
+
+    [Fact]
     public async Task Second_Member_Without_Invitation_Gets_No_Membership()
     {
         await _sut.ResolveAsync(WithSubject("kc-first"), _tenant);       // first → Owner
