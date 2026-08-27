@@ -52,6 +52,7 @@ builder.Services.AddDataProtection()
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TokenProvider>();
+builder.Services.AddScoped<DeveloperPlatform.Web.State.ActiveContextService>();
 builder.Services.AddTransient<ApiTokenHandler>();
 builder.Services.AddHttpClient<DeveloperPlatformApiClient>(c =>
     c.BaseAddress = new Uri(config["Api:BaseUrl"]!))
