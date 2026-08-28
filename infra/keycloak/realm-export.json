@@ -1,6 +1,7 @@
 {
     "realm":  "developer-platform",
     "enabled":  true,
+    "displayName":  "Developer Platform",
     "loginTheme":  "devplatform",
     "registrationAllowed":  false,
     "loginWithEmailAllowed":  true,
