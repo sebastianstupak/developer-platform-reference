@@ -58,7 +58,7 @@ test('Status multi-select with both values keeps successes and failures', async 
 test('Actor search selects an actor as a removable chip', async ({ page }) => {
   const actor = page.getByLabel('Actor', { exact: true });
   await actor.click();
-  await actor.fill('unknown'); // matches the seeded member email (…@unknown)
+  await actor.fill('dev'); // matches the seeded member email (dev@example.com)
 
   await page.locator('.mud-list-item').first().click();
 
