@@ -215,6 +215,8 @@ public class SecretTests : IAsyncLifetime
         await setHandler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "X", "v2"));
         await _db.SaveChangesAsync();
 
+        _db.ChangeTracker.Clear();   // simulate a fresh request scope: with no tracked SecretVersion entities, EF's tracked-entity cascade can't mask the explicit removal (InMemory enforces no FK cascade)
+
         var delHandler = new DeveloperPlatform.Infrastructure.Secrets.DeleteSecretCommandHandler(repo);
         await delHandler.HandleAsync(new DeveloperPlatform.Application.Secrets.DeleteSecret.DeleteSecretCommand(_project, _env, "X"));
         await _db.SaveChangesAsync();
