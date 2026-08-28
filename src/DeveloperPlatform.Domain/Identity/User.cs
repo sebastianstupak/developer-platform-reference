@@ -26,4 +26,14 @@ public class User : IEntity
             DisplayName = displayName
         };
     }
+
+    // Refresh the stored profile from the IdP on a later login (self-heals a stale
+    // "{sub}@unknown" recorded before the email claim was readable).
+    public void UpdateProfile(string email, string displayName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+        Email = email;
+        DisplayName = displayName;
+    }
 }

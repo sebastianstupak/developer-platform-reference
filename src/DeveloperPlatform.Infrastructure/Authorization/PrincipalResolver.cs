@@ -20,14 +20,24 @@ public sealed class PrincipalResolver(ApplicationDbContext db, ITenantCryptoServ
             return null;
         }
 
+        var tokenEmail = user.FindFirst("email")?.Value;
+        var tokenDisplayName = user.FindFirst("preferred_username")?.Value
+            ?? user.FindFirst("name")?.Value;
+
         var dbUser = await db.Users.FirstOrDefaultAsync(u => u.KeycloakSubject == subject, ct);
         if (dbUser is null)
         {
-            var email = user.FindFirst("email")?.Value ?? $"{subject}@unknown";
-            var displayName = user.FindFirst("preferred_username")?.Value
-                ?? user.FindFirst("name")?.Value ?? email;
+            var email = tokenEmail ?? $"{subject}@unknown";
+            var displayName = tokenDisplayName ?? email;
             dbUser = User.Create(subject, email, displayName);
             db.Users.Add(dbUser);
+            await db.SaveChangesAsync(ct);
+        }
+        else if (tokenEmail is not null &&
+                 (dbUser.Email != tokenEmail || (tokenDisplayName is not null && dbUser.DisplayName != tokenDisplayName)))
+        {
+            // Self-heal a stale profile from a login before the email claim was readable.
+            dbUser.UpdateProfile(tokenEmail, tokenDisplayName ?? dbUser.DisplayName);
             await db.SaveChangesAsync(ct);
         }
 
