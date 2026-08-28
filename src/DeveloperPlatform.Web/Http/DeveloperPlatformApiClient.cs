@@ -267,6 +267,31 @@ public sealed class DeveloperPlatformApiClient
         response.EnsureSuccessStatusCode();
     }
 
+    public Task<IReadOnlyList<SecretVersionDto>> GetSecretVersionsAsync(
+        Guid projectId, Guid environmentId, string name, CancellationToken ct = default)
+        => GetListAsync<SecretVersionDto>(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}/versions", ct);
+
+    public async Task<string> RevealSecretVersionAsync(
+        Guid projectId, Guid environmentId, string name, int version, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}/versions/{version}/reveal",
+            null, ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<RevealVersionDto>(ct);
+        return body!.Value;
+    }
+
+    public async Task RollbackSecretAsync(
+        Guid projectId, Guid environmentId, string name, int version, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsJsonAsync(
+            $"/api/v1/projects/{projectId}/environments/{environmentId}/secrets/{Uri.EscapeDataString(name)}/rollback",
+            new { version }, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<int> RotateKeyAsync(CancellationToken ct = default)
     {
         var response = await _http.PostAsync("/api/v1/secrets/rotate-key", null, ct);

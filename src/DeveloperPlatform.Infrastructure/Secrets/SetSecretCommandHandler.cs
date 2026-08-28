@@ -22,15 +22,21 @@ public sealed class SetSecretCommandHandler(
 
         var (payload, keyId) = await crypto.EncryptAsync(ctx.TenantId, command.Value, ct);
         var existing = await repository.GetAsync(command.EnvironmentId, command.Name, ct);
+        Secret secret;
         if (existing is null)
         {
-            await repository.AddAsync(
-                Secret.Create(ctx.TenantId, command.ProjectId, command.EnvironmentId, command.Name, payload, keyId), ct);
+            secret = Secret.Create(ctx.TenantId, command.ProjectId, command.EnvironmentId, command.Name, payload, keyId);
+            await repository.AddAsync(secret, ct);
         }
         else
         {
-            existing.UpdateValue(payload, keyId);
+            secret = existing;
+            secret.SetNewVersion(payload, keyId);
         }
+
+        await repository.AddVersionAsync(SecretVersion.Create(
+            ctx.TenantId, secret.Id, secret.CurrentVersion, payload, keyId,
+            ctx.PrincipalId, ctx.PrincipalType?.ToString(), ctx.UserId), ct);
 
         return Unit.Value;
     }

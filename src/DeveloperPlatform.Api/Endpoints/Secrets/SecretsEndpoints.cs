@@ -4,7 +4,10 @@ using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Secrets.DeleteSecret;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
+using DeveloperPlatform.Application.Secrets.ListSecretVersions;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
+using DeveloperPlatform.Application.Secrets.RevealSecretVersion;
+using DeveloperPlatform.Application.Secrets.RollbackSecret;
 using DeveloperPlatform.Application.Secrets.RotateTenantKey;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +48,27 @@ public static class SecretsEndpoints
             return Results.NoContent();
         }).WithName("DeleteSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
 
+        group.MapGet("/{name}/versions", async (Guid projectId, Guid environmentId, string name, IQueryDispatcher d, CancellationToken ct) =>
+        {
+            var results = await d.SendAsync<ListSecretVersionsQuery, IReadOnlyList<SecretVersionSummary>>(
+                new ListSecretVersionsQuery(projectId, environmentId, name), ct);
+            return Results.Ok(results.Select(v => new SecretVersionResponse(v.VersionNumber, v.CreatedAt, v.Actor, v.IsCurrent, v.RolledBackFrom)));
+        }).WithName("ListSecretVersions").Produces<IEnumerable<SecretVersionResponse>>();
+
+        group.MapPost("/{name}/versions/{version:int}/reveal", async (Guid projectId, Guid environmentId, string name, int version, ICommandDispatcher d, CancellationToken ct) =>
+        {
+            var result = await d.SendAsync<RevealSecretVersionCommand, RevealSecretVersionResult>(
+                new RevealSecretVersionCommand(projectId, environmentId, name, version), ct);
+            return Results.Ok(new RevealVersionResponse(result.Name, result.VersionNumber, result.Value));
+        }).WithName("RevealSecretVersion").Produces<RevealVersionResponse>();
+
+        group.MapPost("/{name}/rollback", async (Guid projectId, Guid environmentId, string name,
+            [FromBody] RollbackSecretRequest req, ICommandDispatcher d, CancellationToken ct) =>
+        {
+            await d.SendAsync<RollbackSecretCommand, Unit>(new RollbackSecretCommand(projectId, environmentId, name, req.Version), ct);
+            return Results.NoContent();
+        }).WithName("RollbackSecret").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
+
         var admin = app.MapGroup("/api/v1/secrets")
             .WithTags("Secrets").WithApiVersionSet(versionSet).MapToApiVersion(1).RequireAuthorization();
         admin.MapPost("/rotate-key", async (ICommandDispatcher d, CancellationToken ct) =>
@@ -63,4 +87,10 @@ public static class SecretsEndpoints
     public record RevealResponse(string Name, string Value);
 
     public record RotateKeyResponse(int SecretsReEncrypted);
+
+    public record SecretVersionResponse(int VersionNumber, DateTime CreatedAt, string? Actor, bool IsCurrent, int? RolledBackFrom);
+
+    public record RevealVersionResponse(string Name, int VersionNumber, string Value);
+
+    public record RollbackSecretRequest(int Version);
 }

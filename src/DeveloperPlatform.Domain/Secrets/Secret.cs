@@ -8,7 +8,8 @@ public class Secret : TenantEntity
     public Guid EnvironmentId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public byte[] EncryptedValue { get; private set; } = [];
-    public Guid KeyId { get; private set; }   // which TenantEncryptionKey encrypted this
+    public Guid KeyId { get; private set; }   // which TenantEncryptionKey encrypted the current value
+    public int CurrentVersion { get; private set; }   // 1-based; number of the latest SecretVersion
     public DateTime UpdatedAt { get; private set; }
 
     private Secret() { }
@@ -26,11 +27,22 @@ public class Secret : TenantEntity
             Name = name,
             EncryptedValue = encryptedValue,
             KeyId = keyId,
+            CurrentVersion = 1,
             UpdatedAt = DateTime.UtcNow
         };
     }
 
-    public void UpdateValue(byte[] encryptedValue, Guid keyId)
+    // A new value: advances the version counter. Used by set and rollback.
+    public void SetNewVersion(byte[] encryptedValue, Guid keyId)
+    {
+        EncryptedValue = encryptedValue;
+        KeyId = keyId;
+        CurrentVersion++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Same value re-encrypted under a new key (key rotation): the version does NOT change.
+    public void ReEncryptCurrent(byte[] encryptedValue, Guid keyId)
     {
         EncryptedValue = encryptedValue;
         KeyId = keyId;

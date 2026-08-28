@@ -15,4 +15,16 @@ public sealed class SecretRepository(ApplicationDbContext db) : ISecretRepositor
 
     public async Task AddAsync(Secret secret, CancellationToken ct = default) => await db.Secrets.AddAsync(secret, ct);
     public void Delete(Secret secret) => db.Secrets.Remove(secret);
+
+    public async Task AddVersionAsync(SecretVersion version, CancellationToken ct = default)
+        => await db.SecretVersions.AddAsync(version, ct);
+
+    public async Task<SecretVersion?> GetVersionAsync(Guid secretId, int versionNumber, CancellationToken ct = default)
+        => await db.SecretVersions.FirstOrDefaultAsync(v => v.SecretId == secretId && v.VersionNumber == versionNumber, ct);
+
+    public async Task RemoveVersionsForSecretAsync(Guid secretId, CancellationToken ct = default)
+    {
+        var versions = await db.SecretVersions.Where(v => v.SecretId == secretId).ToListAsync(ct);
+        db.SecretVersions.RemoveRange(versions);
+    }
 }

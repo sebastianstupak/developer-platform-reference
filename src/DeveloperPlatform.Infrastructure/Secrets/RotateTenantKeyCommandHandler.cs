@@ -22,7 +22,7 @@ public sealed class RotateTenantKeyCommandHandler(
         {
             var plaintext = await crypto.DecryptAsync(ctx.TenantId, secret.EncryptedValue, secret.KeyId, ct);
             var (payload, keyId) = await crypto.EncryptAsync(ctx.TenantId, plaintext, ct);
-            secret.UpdateValue(payload, keyId);
+            secret.ReEncryptCurrent(payload, keyId);
         }
 
         return new RotateTenantKeyResult(secrets.Count);

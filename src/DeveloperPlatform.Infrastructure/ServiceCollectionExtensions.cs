@@ -28,7 +28,10 @@ using DeveloperPlatform.Application.Projects.GetProjects;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Secrets.DeleteSecret;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
+using DeveloperPlatform.Application.Secrets.ListSecretVersions;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
+using DeveloperPlatform.Application.Secrets.RevealSecretVersion;
+using DeveloperPlatform.Application.Secrets.RollbackSecret;
 using DeveloperPlatform.Application.Secrets.RotateTenantKey;
 using DeveloperPlatform.Application.Secrets.SetSecret;
 using DeveloperPlatform.Application.ServiceAccounts.CreateServiceAccount;
@@ -117,6 +120,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<RevealSecretCommand, RevealSecretResult>, RevealSecretCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSecretCommand, Unit>, DeleteSecretCommandHandler>();
         services.AddScoped<ICommandHandler<RotateTenantKeyCommand, RotateTenantKeyResult>, RotateTenantKeyCommandHandler>();
+        services.AddScoped<IQueryHandler<ListSecretVersionsQuery, IReadOnlyList<SecretVersionSummary>>, ListSecretVersionsQueryHandler>();
+        services.AddScoped<ICommandHandler<RevealSecretVersionCommand, RevealSecretVersionResult>, RevealSecretVersionCommandHandler>();
+        services.AddScoped<ICommandHandler<RollbackSecretCommand, Unit>, RollbackSecretCommandHandler>();
 
         // Grant-management handlers (Slice 5)
         services.AddScoped<ICommandHandler<AssignRoleCommand, AssignRoleResult>, AssignRoleCommandHandler>();

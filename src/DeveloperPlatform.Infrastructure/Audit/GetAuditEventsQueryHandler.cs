@@ -2,6 +2,7 @@ using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Common;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Domain.Audit;
+using DeveloperPlatform.Infrastructure.Common;
 using DeveloperPlatform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,7 +72,7 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
 
         var items = rows.Select(r => new AuditEventSummary(
             r.Id, r.OccurredAt, r.CommandType, r.Status,
-            ResolveActor(r.PrincipalType, r.UserId, r.PrincipalId, users, sas), r.PrincipalType, r.IpAddress, r.IsCrossTenant,
+            ActorResolver.Resolve(r.PrincipalType, r.UserId, r.PrincipalId, users, sas), r.PrincipalType, r.IpAddress, r.IsCrossTenant,
             r.ProjectId, r.EnvironmentId)).ToList();
 
         return new PagedResult<AuditEventSummary>(items, total, page, size);
@@ -81,21 +82,4 @@ public sealed class GetAuditEventsQueryHandler(ApplicationDbContext db)
         Guid Id, DateTime OccurredAt, string CommandType, AuditStatus Status,
         Guid? PrincipalId, string? PrincipalType, Guid? UserId, string IpAddress, bool IsCrossTenant,
         Guid? ProjectId, Guid? EnvironmentId);
-
-    internal static string? ResolveActor(
-        string? principalType, Guid? userId, Guid? principalId,
-        IReadOnlyDictionary<Guid, string> users, IReadOnlyDictionary<Guid, string> sas)
-    {
-        if (principalType == "Member" && userId is { } uid && users.TryGetValue(uid, out var email))
-        {
-            return email;
-        }
-
-        if (principalType == "ServiceAccount" && principalId is { } pid && sas.TryGetValue(pid, out var name))
-        {
-            return name;
-        }
-
-        return principalId?.ToString();
-    }
 }
