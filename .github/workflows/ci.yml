@@ -22,14 +22,25 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      # The API host connects to RabbitMQ synchronously at startup and the
+      # WebApplicationFactory integration tests boot that host, so the backing
+      # services must be up. Keycloak is not needed (JWT metadata is lazy).
+      - name: Start backing services
+        run: docker compose up -d --wait db rabbitmq redis
+
       - name: Restore
         run: dotnet restore developer-platform-reference.slnx
 
       - name: Build
         run: dotnet build developer-platform-reference.slnx --no-restore -c Release
 
-      # Unit / integration / architecture tests use in-memory EF Core and mocked
-      # HTTP, so no MariaDB / RabbitMQ / Redis containers are needed here.
+      - name: Apply EF migrations
+        run: |
+          dotnet tool install --global dotnet-ef
+          dotnet ef database update \
+            --project src/DeveloperPlatform.Infrastructure \
+            --startup-project src/DeveloperPlatform.Api
+
       - name: Test
         run: dotnet test developer-platform-reference.slnx --no-build -c Release --verbosity minimal
 
