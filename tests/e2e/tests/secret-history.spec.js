@@ -47,21 +47,26 @@ test('secret history: reveal a prior version and roll back', async ({ page }) =>
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(row).toBeVisible({ timeout: 30_000 });
 
-  // Open the history dialog for that secret.
+  // Open the history dialog for that secret. Scope all assertions/clicks to that
+  // dialog so the row's "Reveal secret" action button (behind the dialog scrim)
+  // can't be matched by the "Reveal" text.
   await row.getByRole('button', { name: 'Version history' }).click();
-  await expect(page.getByText('v2', { exact: true })).toBeVisible();
-  await expect(page.getByText('current', { exact: true })).toBeVisible();
+  const history = page.locator('.mud-dialog').filter({ hasText: 'History' });
+  await expect(history.getByText('v2', { exact: true })).toBeVisible();
+  await expect(history.getByText('current', { exact: true })).toBeVisible();
 
-  // Reveal v1 — versions are listed newest-first, so it's the second (last) "Reveal" button.
-  await page.getByRole('button', { name: 'Reveal' }).last().click();
-  await expect(page.getByText(/Secret value/)).toBeVisible();
-  await page.getByRole('button', { name: 'Close' }).last().click();
+  // Reveal v1 — versions are listed newest-first, so it's the last exact-"Reveal" button.
+  await history.getByRole('button', { name: 'Reveal', exact: true }).last().click();
+  const reveal = page.locator('.mud-dialog').filter({ hasText: 'Secret value' });
+  await expect(reveal).toBeVisible();
+  await reveal.getByRole('button', { name: 'Close' }).click();
 
-  // Roll back to v1 (only the non-current entry has a "Roll back" button at this point).
-  await page.getByRole('button', { name: 'Roll back' }).click();
-  await page.getByRole('button', { name: 'Roll back' }).last().click(); // confirm dialog
+  // Roll back to v1 (only the non-current entry has a "Roll back" button), then confirm.
+  await history.getByRole('button', { name: 'Roll back' }).click();
+  await page.locator('.mud-dialog').filter({ hasText: 'Roll back secret' })
+    .getByRole('button', { name: 'Roll back' }).click();
 
   // A new current version (v3) appears, recorded as rolled back from v1.
-  await expect(page.getByText('v3', { exact: true })).toBeVisible();
-  await expect(page.getByText('rolled back from v1')).toBeVisible();
+  await expect(history.getByText('v3', { exact: true })).toBeVisible();
+  await expect(history.getByText('rolled back from v1')).toBeVisible();
 });
