@@ -12,4 +12,4 @@ public record RevealSecretVersionCommand(Guid ProjectId, Guid EnvironmentId, str
     public Scope ResourceScope => Scope.Environment(EnvironmentId);
 }
 
-public record RevealSecretVersionResult(string Name, int VersionNumber, string Value);
+public record RevealSecretVersionResult(string Name, int VersionNumber, [property: SensitiveData] string Value);
