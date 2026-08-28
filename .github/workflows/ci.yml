@@ -36,7 +36,7 @@ jobs:
 
       - name: Apply EF migrations
         run: |
-          dotnet tool install --global dotnet-ef
+          dotnet tool install --global dotnet-ef --version "9.*"
           dotnet ef database update \
             --project src/DeveloperPlatform.Infrastructure \
             --startup-project src/DeveloperPlatform.Api
