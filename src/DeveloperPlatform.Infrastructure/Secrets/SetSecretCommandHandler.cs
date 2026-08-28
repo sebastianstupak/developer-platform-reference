@@ -29,7 +29,7 @@ public sealed class SetSecretCommandHandler(
         }
         else
         {
-            existing.UpdateValue(payload, keyId);
+            existing.SetNewVersion(payload, keyId);
         }
 
         return Unit.Value;

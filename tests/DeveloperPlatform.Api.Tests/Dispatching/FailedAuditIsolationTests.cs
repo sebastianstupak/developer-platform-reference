@@ -91,7 +91,7 @@ public class FailedAuditIsolationTests : IAsyncLifetime
         {
             var secret = await db.Secrets.FindAsync([command.SecretId], ct)
                 ?? throw new InvalidOperationException("secret not found");
-            secret.UpdateValue(new byte[] { 9, 9, 9 }, Guid.NewGuid());
+            secret.SetNewVersion(new byte[] { 9, 9, 9 }, Guid.NewGuid());
             throw new InvalidOperationException("boom");
         }
     }

@@ -30,13 +30,39 @@ public class SecretTests : IAsyncLifetime
     public Task DisposeAsync() => _db.DisposeAsync().AsTask();
 
     [Fact]
-    public void UpdateValue_Sets_UpdatedAt_Later()
+    public void SetNewVersion_Advances_Version_And_Value()
     {
         var s = Secret.Create(_tenant, _project, _env, "DB_URL", new byte[] { 1 }, Guid.NewGuid());
+        Assert.Equal(1, s.CurrentVersion);
         var created = s.UpdatedAt;
-        s.UpdateValue(new byte[] { 2 }, Guid.NewGuid());
+        s.SetNewVersion(new byte[] { 2 }, Guid.NewGuid());
+        Assert.Equal(2, s.CurrentVersion);
         Assert.True(s.UpdatedAt >= created);
         Assert.Equal(2, s.EncryptedValue[0]);
+    }
+
+    [Fact]
+    public void ReEncryptCurrent_Changes_Value_But_Not_Version()
+    {
+        var s = Secret.Create(_tenant, _project, _env, "DB_URL", new byte[] { 1 }, Guid.NewGuid());
+        s.ReEncryptCurrent(new byte[] { 9 }, Guid.NewGuid());
+        Assert.Equal(1, s.CurrentVersion);
+        Assert.Equal(9, s.EncryptedValue[0]);
+    }
+
+    [Fact]
+    public void SecretVersion_Create_Records_Fields()
+    {
+        var secretId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var v = SecretVersion.Create(_tenant, secretId, 3, new byte[] { 7 }, Guid.NewGuid(),
+            principalId: Guid.NewGuid(), principalType: "Member", userId: userId, rolledBackFrom: 1);
+        Assert.Equal(secretId, v.SecretId);
+        Assert.Equal(3, v.VersionNumber);
+        Assert.Equal(7, v.EncryptedValue[0]);
+        Assert.Equal("Member", v.CreatedByPrincipalType);
+        Assert.Equal(userId, v.CreatedByUserId);
+        Assert.Equal(1, v.RolledBackFrom);
     }
 
     [Fact]
