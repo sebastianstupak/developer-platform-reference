@@ -85,7 +85,7 @@
                         "protocol":  "openid-connect",
                         "publicClient":  true,
                         "standardFlowEnabled":  false,
-                        "directAccessGrantsEnabled":  false,
+                        "directAccessGrantsEnabled":  true,
                         "redirectUris":  [
 
                                          ],

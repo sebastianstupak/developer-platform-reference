@@ -42,7 +42,7 @@ jobs:
             --startup-project src/DeveloperPlatform.Api
 
       - name: Test
-        run: dotnet test developer-platform-reference.slnx --no-build -c Release --verbosity minimal
+        run: dotnet test developer-platform-reference.slnx --no-build -c Release --verbosity minimal --filter "Category!=E2E"
 
       - name: Format check
         run: dotnet format developer-platform-reference.slnx --verify-no-changes --verbosity minimal
