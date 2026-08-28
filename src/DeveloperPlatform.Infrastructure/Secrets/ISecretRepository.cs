@@ -10,4 +10,5 @@ public interface ISecretRepository
     void Delete(Secret secret);
     Task AddVersionAsync(SecretVersion version, CancellationToken ct = default);
     Task<SecretVersion?> GetVersionAsync(Guid secretId, int versionNumber, CancellationToken ct = default);
+    Task RemoveVersionsForSecretAsync(Guid secretId, CancellationToken ct = default);
 }

@@ -201,6 +201,28 @@ public class SecretTests : IAsyncLifetime
             handler.HandleAsync(new DeveloperPlatform.Application.Secrets.DeleteSecret.DeleteSecretCommand(_project, _env, "X")));
     }
 
+    [Fact]
+    public async Task Delete_Secret_Also_Removes_Its_Versions()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var setHandler = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto,
+            new TestExecutionContext { TenantId = _tenant });
+        await setHandler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "X", "v1"));
+        await _db.SaveChangesAsync();
+        await setHandler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "X", "v2"));
+        await _db.SaveChangesAsync();
+
+        var delHandler = new DeveloperPlatform.Infrastructure.Secrets.DeleteSecretCommandHandler(repo);
+        await delHandler.HandleAsync(new DeveloperPlatform.Application.Secrets.DeleteSecret.DeleteSecretCommand(_project, _env, "X"));
+        await _db.SaveChangesAsync();
+
+        Assert.Empty(await _db.Secrets.ToListAsync());
+        Assert.Empty(await _db.SecretVersions.ToListAsync());
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }

@@ -21,4 +21,10 @@ public sealed class SecretRepository(ApplicationDbContext db) : ISecretRepositor
 
     public async Task<SecretVersion?> GetVersionAsync(Guid secretId, int versionNumber, CancellationToken ct = default)
         => await db.SecretVersions.FirstOrDefaultAsync(v => v.SecretId == secretId && v.VersionNumber == versionNumber, ct);
+
+    public async Task RemoveVersionsForSecretAsync(Guid secretId, CancellationToken ct = default)
+    {
+        var versions = await db.SecretVersions.Where(v => v.SecretId == secretId).ToListAsync(ct);
+        db.SecretVersions.RemoveRange(versions);
+    }
 }

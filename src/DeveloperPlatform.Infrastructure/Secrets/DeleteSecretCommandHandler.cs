@@ -10,6 +10,7 @@ public sealed class DeleteSecretCommandHandler(ISecretRepository repository)
     {
         var secret = await repository.GetAsync(command.EnvironmentId, command.Name, ct)
             ?? throw new KeyNotFoundException($"Secret '{command.Name}' not found.");
+        await repository.RemoveVersionsForSecretAsync(secret.Id, ct);
         repository.Delete(secret);
         return Unit.Value;
     }
