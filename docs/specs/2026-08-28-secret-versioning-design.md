@@ -29,23 +29,32 @@ These forks were settled during brainstorming:
 
 `src/DeveloperPlatform.Domain/Secrets/Secret.cs`
 
-Add one field and adjust the two factory/mutator methods to track the version counter. The existing `EncryptedValue`/`KeyId`/`UpdatedAt` stay as the mirror of the latest version.
+Add one field and replace the single `UpdateValue` mutator with two explicit methods. The existing `EncryptedValue`/`KeyId`/`UpdatedAt` stay as the mirror of the latest version.
 
 ```csharp
 public int CurrentVersion { get; private set; }   // 1-based; latest version number
 
 // Create(...) sets CurrentVersion = 1 (unchanged signature otherwise)
 
-public void UpdateValue(byte[] encryptedValue, Guid keyId)
+// A new value: advances the version counter. Used by set and rollback.
+public void SetNewVersion(byte[] encryptedValue, Guid keyId)
+{
+    EncryptedValue = encryptedValue;
+    KeyId = keyId;
+    CurrentVersion++;
+    UpdatedAt = DateTime.UtcNow;
+}
+
+// Same value re-encrypted under a new key (key rotation): the version does NOT change.
+public void ReEncryptCurrent(byte[] encryptedValue, Guid keyId)
 {
     EncryptedValue = encryptedValue;
     KeyId = keyId;
     UpdatedAt = DateTime.UtcNow;
-    CurrentVersion++;               // advance the counter on every write (incl. rollback)
 }
 ```
 
-Both normal updates and rollbacks go through `UpdateValue`; rollback simply passes freshly re-encrypted bytes. The handler reads `secret.CurrentVersion` after the call to number the new `SecretVersion` row.
+Why two methods, not one: `UpdateValue` is called today by both `SetSecretCommandHandler` and `RotateTenantKeyCommandHandler`. A version bump belongs to a genuine value change (set, rollback), **not** to key rotation, which re-encrypts the same value (§9). Set and rollback call `SetNewVersion`; rotation calls `ReEncryptCurrent`. The handler reads `secret.CurrentVersion` after `SetNewVersion` to number the new `SecretVersion` row.
 
 ### 3.2 `SecretVersion` (new)
 
@@ -162,7 +171,7 @@ if (existing is null)
 else
 {
     secret = existing;
-    secret.UpdateValue(payload, keyId);              // CurrentVersion++
+    secret.SetNewVersion(payload, keyId);            // CurrentVersion++
 }
 
 await repository.AddVersionAsync(SecretVersion.Create(
@@ -181,7 +190,7 @@ var target = await repository.GetVersionAsync(secret.Id, command.TargetVersion, 
 var plaintext = await crypto.DecryptAsync(ctx.TenantId, target.EncryptedValue, target.KeyId, ct);
 var (payload, keyId) = await crypto.EncryptAsync(ctx.TenantId, plaintext, ct);   // fresh current key
 
-secret.UpdateValue(payload, keyId);                                              // CurrentVersion++
+secret.SetNewVersion(payload, keyId);                                            // CurrentVersion++
 await repository.AddVersionAsync(SecretVersion.Create(
     ctx.TenantId, secret.Id, secret.CurrentVersion, payload, keyId,
     ctx.PrincipalId, ctx.PrincipalType?.ToString(), ctx.UserId,
@@ -235,7 +244,7 @@ Reuses existing components/helpers: `RevealSecretDialog`, `TimeFormat.Relative`,
 ## 9. Crypto & rotation interaction
 
 - Each `SecretVersion` stores its own `KeyId`. Because rotated keys are **retained**, any version decrypts with its recorded key regardless of later rotations — so reveal-old-version and rollback work across rotations with no special handling.
-- **Key rotation is unchanged.** `RotateTenantKeyCommandHandler` re-encrypts current `Secret.EncryptedValue` rows under the new key as it does today; historical `SecretVersion` rows keep their original `KeyId` (still decryptable via retained keys). Rotation does **not** create new versions — it is a re-encryption of the current value, not a value change. This is called out so a reviewer does not expect rotation to touch the history table.
+- **Key rotation is unchanged in effect.** `RotateTenantKeyCommandHandler` re-encrypts current `Secret.EncryptedValue` rows under the new key as it does today, now via `Secret.ReEncryptCurrent` (which does not touch `CurrentVersion`); historical `SecretVersion` rows keep their original `KeyId` (still decryptable via retained keys). Rotation does **not** create new versions or change version numbers — it is a re-encryption of the current value, not a value change. This is why `SetNewVersion` and `ReEncryptCurrent` are separate methods (§3.1).
 
 ## 10. Audit interaction
 
