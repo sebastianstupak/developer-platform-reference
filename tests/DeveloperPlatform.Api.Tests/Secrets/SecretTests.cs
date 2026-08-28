@@ -66,6 +66,22 @@ public class SecretTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SecretVersions_Persist_And_Query_By_Secret_Newest_First()
+    {
+        var secretId = Guid.NewGuid();
+        _db.Add(SecretVersion.Create(_tenant, secretId, 1, new byte[] { 1 }, Guid.NewGuid(), null, null, null));
+        _db.Add(SecretVersion.Create(_tenant, secretId, 2, new byte[] { 2 }, Guid.NewGuid(), null, null, null));
+        await _db.SaveChangesAsync();
+
+        var rows = await _db.SecretVersions.AsNoTracking()
+            .Where(v => v.SecretId == secretId)
+            .OrderByDescending(v => v.VersionNumber)
+            .ToListAsync();
+
+        Assert.Equal(new[] { 2, 1 }, rows.Select(v => v.VersionNumber));
+    }
+
+    [Fact]
     public async Task Repository_Get_By_Environment_And_Name()
     {
         var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
