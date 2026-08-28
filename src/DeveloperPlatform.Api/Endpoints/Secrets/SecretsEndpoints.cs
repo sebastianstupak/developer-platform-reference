@@ -3,6 +3,7 @@ using Asp.Versioning.Builder;
 using DeveloperPlatform.Application.Commands;
 using DeveloperPlatform.Application.Queries;
 using DeveloperPlatform.Application.Secrets.DeleteSecret;
+using DeveloperPlatform.Application.Secrets.ExportSecrets;
 using DeveloperPlatform.Application.Secrets.ListSecrets;
 using DeveloperPlatform.Application.Secrets.ListSecretVersions;
 using DeveloperPlatform.Application.Secrets.RevealSecret;
@@ -41,6 +42,13 @@ public static class SecretsEndpoints
                 new RevealSecretCommand(projectId, environmentId, name), ct);
             return Results.Ok(new RevealResponse(result.Name, result.Value));
         }).WithName("RevealSecret").Produces<RevealResponse>();
+
+        group.MapPost("/export", async (Guid projectId, Guid environmentId, ICommandDispatcher d, CancellationToken ct) =>
+        {
+            var result = await d.SendAsync<ExportSecretsCommand, ExportSecretsResult>(
+                new ExportSecretsCommand(projectId, environmentId), ct);
+            return Results.Ok(result.Secrets);
+        }).WithName("ExportSecrets").Produces<IReadOnlyDictionary<string, string>>();
 
         group.MapDelete("/{name}", async (Guid projectId, Guid environmentId, string name, ICommandDispatcher d, CancellationToken ct) =>
         {
