@@ -17,16 +17,18 @@ The Keycloak sign-in experience (realm `developer-platform`, :8090) should look 
 - Theme lives at `infra/keycloak/themes/devplatform`, mounted read-only into Keycloak 26.2 at `/opt/keycloak/themes/devplatform` (existing `docker-compose.yml`).
 - Realm `loginTheme` is already `devplatform` (`infra/keycloak/realm-export.json`).
 - Keycloak runs `start-dev`, which disables theme/template caching — CSS edits reload on browser refresh, no container restart.
-- No changes to `docker-compose.yml` or the realm are required.
+- No changes to `docker-compose.yml` are required. `realm-export.json` gains `displayName: "Developer Platform"` so the login header renders the wordmark (the header text is the realm display name).
+- Operational note: a running container created before the Phase-7 `keycloak/ → infra/keycloak/` move holds a **stale bind mount** to the old path, so the theme never loads. `docker compose up -d --force-recreate keycloak` fixes the mount and makes Keycloak re-scan themes and re-import the realm from `realm-export.json`. Adding new theme files afterward only needs the browser refresh (`start-dev` cache is off); adding a new theme **directory** needs another recreate (Windows bind-mount limitation, see §5).
 
 ## 4. Parent + style chain
 
-- `theme.properties`: `parent=keycloak.v2` (Keycloak 26.2's PatternFly-v5 login base).
-- Fix `styles=` so the parent's base stylesheet loads **before** our override, then `css/zinc.css` last so it wins. A child `styles=` replaces the parent's list, so the base sheet must be re-included explicitly; the current `css/login.css` entry is a phantom (no such file) and is corrected. The exact base filename is confirmed by inspecting the parent theme inside the container (`/opt/keycloak/lib/.../theme/keycloak.v2/login/theme.properties`) or the rendered page's `<link>`s.
+- `theme.properties`: `parent=keycloak` (the legacy PatternFly-v3/v4 login base). Kept deliberately rather than migrating to `keycloak.v2`: it renders cleanly, is simpler to override, and our CSS fully controls the look regardless of base. (`keycloak.v2` remains a future option; not worth the selector re-targeting for zero visual gain.)
+- `styles=css/login.css css/fonts.css css/zinc.css`. `css/login.css` resolves from the parent chain (inherited base); `css/fonts.css` declares the bundled `@font-face`s; `css/zinc.css` is our override and is listed last so it wins.
 
 ## 5. Typography
 
-- Bundle Inter in the theme: `resources/fonts/inter-{400,500,600,700}.woff2` + an `@font-face` block (in `resources/css/fonts.css`, added to `styles=`). The login then renders in Inter offline, matching the app (which loads Inter 300–700 from Google Fonts). The current name-only `Inter` fallback (which silently degrades to system-ui) is replaced.
+- Bundle Inter in the theme: `resources/css/inter-{400,500,600,700}.woff2` + an `@font-face` block in `resources/css/fonts.css` (added to `styles=`). The login then renders in Inter offline, matching the app (which loads Inter 300–700 from Google Fonts). The current name-only `Inter` fallback (which silently degrades to system-ui) is replaced, and `zinc.css` forces Inter on PatternFly titles/inputs/buttons (which set their own font-family).
+- The woff2 files are co-located with the CSS (`resources/css/`) rather than a separate `resources/fonts/` dir: Docker Desktop on Windows does not propagate newly-created bind-mount subdirectories into a running container, whereas new files added to an existing mounted dir (`css/`) do propagate. Same-directory `url("inter-400.woff2")` references keep it simple.
 
 ## 6. Design tokens (locked to the app)
 
