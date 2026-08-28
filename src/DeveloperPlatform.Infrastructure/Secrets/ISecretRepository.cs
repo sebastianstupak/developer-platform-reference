@@ -8,4 +8,6 @@ public interface ISecretRepository
     Task<IReadOnlyList<Secret>> ListAsync(Guid environmentId, CancellationToken ct = default);
     Task AddAsync(Secret secret, CancellationToken ct = default);
     void Delete(Secret secret);
+    Task AddVersionAsync(SecretVersion version, CancellationToken ct = default);
+    Task<SecretVersion?> GetVersionAsync(Guid secretId, int versionNumber, CancellationToken ct = default);
 }

@@ -112,6 +112,52 @@ public class SecretTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Set_New_Secret_Writes_Version_1()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db), crypto,
+            new TestExecutionContext { TenantId = _tenant });
+
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "first"));
+        await _db.SaveChangesAsync();
+
+        var secret = await _db.Secrets.AsNoTracking().SingleAsync();
+        var versions = await _db.SecretVersions.AsNoTracking().Where(v => v.SecretId == secret.Id).ToListAsync();
+        Assert.Equal(1, secret.CurrentVersion);
+        var v1 = Assert.Single(versions);
+        Assert.Equal(1, v1.VersionNumber);
+        Assert.Null(v1.RolledBackFrom);
+        Assert.Equal("first", await crypto.DecryptAsync(_tenant, v1.EncryptedValue, v1.KeyId));
+    }
+
+    [Fact]
+    public async Task Set_Twice_Writes_Version_2_And_Advances_Current()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db), crypto,
+            new TestExecutionContext { TenantId = _tenant });
+
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "first"));
+        await _db.SaveChangesAsync();
+        await handler.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "second"));
+        await _db.SaveChangesAsync();
+
+        var secret = await _db.Secrets.AsNoTracking().SingleAsync();
+        var versions = await _db.SecretVersions.AsNoTracking()
+            .Where(v => v.SecretId == secret.Id).OrderBy(v => v.VersionNumber).ToListAsync();
+        Assert.Equal(2, secret.CurrentVersion);
+        Assert.Equal(new[] { 1, 2 }, versions.Select(v => v.VersionNumber));
+        Assert.Equal("first", await crypto.DecryptAsync(_tenant, versions[0].EncryptedValue, versions[0].KeyId));
+        Assert.Equal("second", await crypto.DecryptAsync(_tenant, versions[1].EncryptedValue, versions[1].KeyId));
+    }
+
+    [Fact]
     public async Task List_Returns_Names_And_Meta_Only()
     {
         _db.Secrets.Add(Secret.Create(_tenant, _project, _env, "A", new byte[] { 1 }, Guid.NewGuid()));
