@@ -3,6 +3,7 @@ using DeveloperPlatform.Application.Audit.GetAuditEvents;
 using DeveloperPlatform.Application.Context;
 using DeveloperPlatform.Application.Crypto;
 using DeveloperPlatform.Application.Queries;
+using DeveloperPlatform.Infrastructure.Common;
 using DeveloperPlatform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +27,7 @@ public sealed class GetAuditEventDetailQueryHandler(
 
         var summary = new AuditEventSummary(
             e.Id, e.OccurredAt, e.CommandType, e.Status,
-            GetAuditEventsQueryHandler.ResolveActor(e.PrincipalType, e.UserId, e.PrincipalId, users, sas), e.PrincipalType, e.IpAddress,
+            ActorResolver.Resolve(e.PrincipalType, e.UserId, e.PrincipalId, users, sas), e.PrincipalType, e.IpAddress,
             e.IsCrossTenant, e.ProjectId, e.EnvironmentId);
 
         string payloadJson = "";

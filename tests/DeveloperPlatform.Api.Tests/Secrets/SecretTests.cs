@@ -1,6 +1,7 @@
 using DeveloperPlatform.Application.Context;
 using DeveloperPlatform.Application.Tenancy;
 using DeveloperPlatform.Domain.Authorization;
+using DeveloperPlatform.Domain.Identity;
 using DeveloperPlatform.Domain.Secrets;
 using DeveloperPlatform.Infrastructure.Crypto;
 using DeveloperPlatform.Infrastructure.Persistence;
@@ -223,6 +224,41 @@ public class SecretTests : IAsyncLifetime
 
         Assert.Empty(await _db.Secrets.ToListAsync());
         Assert.Empty(await _db.SecretVersions.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ListVersions_Returns_Newest_First_With_Current_And_Actor()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+
+        var user = User.Create("kc-sub-1", "alice@example.com", "Alice");
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+
+        // Two versions; the second authored by a known Member user.
+        var (p1, k1) = await crypto.EncryptAsync(_tenant, "one");
+        var secret = Secret.Create(_tenant, _project, _env, "TOKEN", p1, k1);
+        await repo.AddAsync(secret);
+        await repo.AddVersionAsync(SecretVersion.Create(_tenant, secret.Id, 1, p1, k1, null, null, null));
+        var (p2, k2) = await crypto.EncryptAsync(_tenant, "two");
+        secret.SetNewVersion(p2, k2);
+        await repo.AddVersionAsync(SecretVersion.Create(_tenant, secret.Id, 2, p2, k2,
+            principalId: Guid.NewGuid(), principalType: "Member", userId: user.Id));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.ListSecretVersionsQueryHandler(_db);
+        var list = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.ListSecretVersions.ListSecretVersionsQuery(_project, _env, "TOKEN"));
+
+        Assert.Equal(new[] { 2, 1 }, list.Select(v => v.VersionNumber));
+        Assert.True(list[0].IsCurrent);
+        Assert.False(list[1].IsCurrent);
+        Assert.Equal("alice@example.com", list[0].Actor);
     }
 
     private sealed class TestExecutionContext : IExecutionContext
