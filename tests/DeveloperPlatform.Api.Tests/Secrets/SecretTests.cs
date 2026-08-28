@@ -374,6 +374,67 @@ public class SecretTests : IAsyncLifetime
             new DeveloperPlatform.Application.Secrets.RollbackSecret.RollbackSecretCommand(_project, _env, "K", 99)));
     }
 
+    [Fact]
+    public async Task Export_Returns_All_Secrets_Decrypted()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "DATABASE_URL", "postgres://x"));
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "API_KEY", "sk-123"));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.ExportSecretsCommandHandler(repo, crypto, ctx);
+        var result = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.ExportSecrets.ExportSecretsCommand(_project, _env));
+
+        Assert.Equal(2, result.Secrets.Count);
+        Assert.Equal("postgres://x", result.Secrets["DATABASE_URL"]);
+        Assert.Equal("sk-123", result.Secrets["API_KEY"]);
+    }
+
+    [Fact]
+    public async Task Export_Empty_Environment_Returns_Empty()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.ExportSecretsCommandHandler(
+            new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db), crypto,
+            new TestExecutionContext { TenantId = _tenant });
+        var result = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.ExportSecrets.ExportSecretsCommand(_project, _env));
+        Assert.Empty(result.Secrets);
+    }
+
+    [Fact]
+    public async Task Export_Decrypts_Secrets_On_Retained_Older_Keys()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);            // key A active
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "OLD", "old-value"));  // on key A
+        await _db.SaveChangesAsync();
+
+        await crypto.CreateKeyAsync(_tenant);            // key B now newest/active; OLD stays on key A
+        await _db.SaveChangesAsync();
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "NEW", "new-value"));  // on key B
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.ExportSecretsCommandHandler(repo, crypto, ctx);
+        var result = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.ExportSecrets.ExportSecretsCommand(_project, _env));
+
+        Assert.Equal("old-value", result.Secrets["OLD"]);   // key A retained → still decrypts
+        Assert.Equal("new-value", result.Secrets["NEW"]);   // key B
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
