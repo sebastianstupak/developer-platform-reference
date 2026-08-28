@@ -261,6 +261,72 @@ public class SecretTests : IAsyncLifetime
         Assert.Equal("alice@example.com", list[0].Actor);
     }
 
+    [Fact]
+    public async Task RevealVersion_Returns_That_Versions_Plaintext()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "one"));
+        await _db.SaveChangesAsync();
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "two"));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.RevealSecretVersionCommandHandler(repo, crypto, ctx);
+        var v1 = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.RevealSecretVersion.RevealSecretVersionCommand(_project, _env, "K", 1));
+        Assert.Equal(1, v1.VersionNumber);
+        Assert.Equal("one", v1.Value);
+    }
+
+    [Fact]
+    public async Task RevealVersion_Still_Works_After_Key_Rotation()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "one"));
+        await _db.SaveChangesAsync();
+
+        // Rotate the tenant key: re-encrypts current values, retains the old key.
+        var rotate = new DeveloperPlatform.Infrastructure.Secrets.RotateTenantKeyCommandHandler(_db, crypto, ctx);
+        await rotate.HandleAsync(new DeveloperPlatform.Application.Secrets.RotateTenantKey.RotateTenantKeyCommand());
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.RevealSecretVersionCommandHandler(repo, crypto, ctx);
+        var v1 = await handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.RevealSecretVersion.RevealSecretVersionCommand(_project, _env, "K", 1));
+        Assert.Equal("one", v1.Value);
+
+        // Rotation must not create a new version.
+        var secret = await _db.Secrets.AsNoTracking().SingleAsync();
+        Assert.Equal(1, secret.CurrentVersion);
+        Assert.Single(await _db.SecretVersions.AsNoTracking().Where(v => v.SecretId == secret.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task RevealVersion_Unknown_Version_Throws()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "one"));
+        await _db.SaveChangesAsync();
+
+        var handler = new DeveloperPlatform.Infrastructure.Secrets.RevealSecretVersionCommandHandler(repo, crypto, ctx);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => handler.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.RevealSecretVersion.RevealSecretVersionCommand(_project, _env, "K", 99)));
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
