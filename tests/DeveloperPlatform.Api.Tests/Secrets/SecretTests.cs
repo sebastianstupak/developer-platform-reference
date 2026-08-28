@@ -327,6 +327,53 @@ public class SecretTests : IAsyncLifetime
             new DeveloperPlatform.Application.Secrets.RevealSecretVersion.RevealSecretVersionCommand(_project, _env, "K", 99)));
     }
 
+    [Fact]
+    public async Task Rollback_Creates_New_Version_With_Target_Value()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "one"));   // v1
+        await _db.SaveChangesAsync();
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "two"));   // v2
+        await _db.SaveChangesAsync();
+
+        var rollback = new DeveloperPlatform.Infrastructure.Secrets.RollbackSecretCommandHandler(repo, crypto, ctx);
+        await rollback.HandleAsync(new DeveloperPlatform.Application.Secrets.RollbackSecret.RollbackSecretCommand(_project, _env, "K", 1));
+        await _db.SaveChangesAsync();
+
+        var secret = await _db.Secrets.AsNoTracking().SingleAsync();
+        Assert.Equal(3, secret.CurrentVersion);
+        var v3 = await _db.SecretVersions.AsNoTracking().SingleAsync(v => v.SecretId == secret.Id && v.VersionNumber == 3);
+        Assert.Equal(1, v3.RolledBackFrom);
+        Assert.Equal("one", await crypto.DecryptAsync(_tenant, v3.EncryptedValue, v3.KeyId));
+
+        // The current pointer now decrypts to the rolled-back value.
+        var reveal = new DeveloperPlatform.Infrastructure.Secrets.RevealSecretCommandHandler(repo, crypto, ctx);
+        var current = await reveal.HandleAsync(new DeveloperPlatform.Application.Secrets.RevealSecret.RevealSecretCommand(_project, _env, "K"));
+        Assert.Equal("one", current.Value);
+    }
+
+    [Fact]
+    public async Task Rollback_Unknown_Version_Throws()
+    {
+        var crypto = new TenantCryptoService(_db, Key);
+        await crypto.CreateKeyAsync(_tenant);
+        await _db.SaveChangesAsync();
+        var repo = new DeveloperPlatform.Infrastructure.Secrets.SecretRepository(_db);
+        var ctx = new TestExecutionContext { TenantId = _tenant };
+        var set = new DeveloperPlatform.Infrastructure.Secrets.SetSecretCommandHandler(repo, crypto, ctx);
+        await set.HandleAsync(new DeveloperPlatform.Application.Secrets.SetSecret.SetSecretCommand(_project, _env, "K", "one"));
+        await _db.SaveChangesAsync();
+
+        var rollback = new DeveloperPlatform.Infrastructure.Secrets.RollbackSecretCommandHandler(repo, crypto, ctx);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => rollback.HandleAsync(
+            new DeveloperPlatform.Application.Secrets.RollbackSecret.RollbackSecretCommand(_project, _env, "K", 99)));
+    }
+
     private sealed class TestExecutionContext : IExecutionContext
     {
         public Guid TenantId { get; set; }
